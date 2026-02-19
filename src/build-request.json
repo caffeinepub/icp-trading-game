@@ -1,0 +1,76 @@
+{
+  "kind": "build_request",
+  "title": "Add ICP holdings display and MAX button to sell interface",
+  "priority": "normal",
+  "requirements": [
+    {
+      "id": "REQ-23",
+      "text": "Display the user's current ICP holdings amount in the sell section of the TradingPanel, showing how much ICP is available to sell",
+      "target": "frontend",
+      "source": {
+        "messageIds": [
+          "msg-user-request"
+        ],
+        "quotes": [
+          "it doesn't show you how much ICP you actually have on the sell part. So it should display the amount"
+        ]
+      },
+      "acceptanceCriteria": [
+        "The sell tab shows the user's current ICP balance prominently",
+        "The ICP holdings display updates when transactions complete",
+        "The display is clearly labeled as available ICP to sell"
+      ]
+    },
+    {
+      "id": "REQ-24",
+      "text": "Add a MAX button to the sell interface that auto-fills the input field with the user's full ICP holdings, allowing them to sell all their ICP with one click",
+      "target": "frontend",
+      "source": {
+        "messageIds": [
+          "msg-user-request"
+        ],
+        "quotes": [
+          "you should also have a max button where you hit max and it basically puts all the amount of either money you have or the amount of ICP you have and you can sell it all"
+        ]
+      },
+      "acceptanceCriteria": [
+        "A MAX button appears in the sell interface near the input field",
+        "Clicking MAX fills the input with the user's full ICP balance",
+        "The MAX button is disabled or hidden when ICP holdings are zero"
+      ]
+    },
+    {
+      "id": "REQ-25",
+      "text": "Add a MAX button to the buy interface that auto-fills the input with either the maximum ICP purchasable with available cash (when in ICP mode) or the full cash balance (when in dollar mode)",
+      "target": "frontend",
+      "source": {
+        "messageIds": [
+          "msg-user-request"
+        ],
+        "quotes": [
+          "you hit max and it basically puts all the amount of either money you have or the amount of ICP you have and you can sell it all or buy it all depending on where you're selecting"
+        ]
+      },
+      "acceptanceCriteria": [
+        "A MAX button appears in the buy interface near the input field",
+        "When in ICP input mode, MAX calculates and fills the maximum ICP amount purchasable with current cash balance at current ICP price",
+        "When in dollar input mode, MAX fills the input with the user's full cash balance",
+        "The MAX button is disabled when cash balance is zero or insufficient"
+      ]
+    }
+  ],
+  "constraints": [
+    "Do not modify the backend actor structure or trading logic",
+    "Preserve the existing dollar/ICP toggle functionality in TradingPanel",
+    "Do not change the hooks in frontend/src/hooks/useInternetIdentity.ts or frontend/src/hooks/useActor.ts"
+  ],
+  "nonGoals": [
+    "Modifying how ICP holdings are calculated or stored in the backend",
+    "Adding balance displays to other components besides TradingPanel",
+    "Implementing partial MAX functionality (e.g., 50% or 25% buttons)"
+  ],
+  "imageRequirements": {
+    "required": [],
+    "edits": []
+  }
+}

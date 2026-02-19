@@ -1,0 +1,20 @@
+{
+  "frontend/src/App.tsx": "Main application component with authentication flow, game mode context provider, game mode selector, countdown timer, and tabbed navigation between trading, portfolio, and leaderboard views.",
+  "frontend/src/components/PriceChart.tsx": "Interactive ICP price chart component with timeframe toggles (24h, 7d, 30d, 90d, 180d) displaying historical price data using Recharts with price change indicators.",
+  "frontend/src/components/TradingPanel.tsx": "Trading interface with buy/sell tabs, toggle between ICP amount and dollar amount input modes for both buy and sell, MAX buttons that auto-fill with maximum available amounts, balance displays showing available cash and ICP, automatic conversion display, and validation against available balances.",
+  "frontend/src/components/Portfolio.tsx": "Portfolio dashboard displaying cash balance, ICP holdings, total value, profit/loss calculations with visual indicators for the selected game mode, and an admin-only reset button with confirmation dialog.",
+  "frontend/src/components/Leaderboard.tsx": "Game-mode-specific leaderboard table showing ranked traders by profit/loss with trophy icons for top three positions, detailed P&L metrics, and historical winners section below.",
+  "frontend/src/hooks/useQueries.ts": "React Query hooks for fetching game-mode-specific leaderboard data and checking admin status with automatic refetch intervals.",
+  "frontend/src/hooks/useICPPriceData.ts": "Custom hooks for fetching ICP price data from CoinGecko API including historical chart data and current price with automatic refresh intervals.",
+  "frontend/src/hooks/useTradingActions.ts": "Trading action hooks that handle game-mode-aware buy/sell ICP transactions and admin account reset with proper price parameter passing, enhanced error handling, and automatic data invalidation.",
+  "frontend/src/hooks/usePortfolio.ts": "Portfolio data hook that combines game-mode-specific user account data from leaderboard with current ICP price to calculate portfolio metrics.",
+  "frontend/src/hooks/useLeaderboard.ts": "Leaderboard processing hook that calculates total value and profit/loss for all players in the selected game mode and sorts them by performance.",
+  "frontend/src/index.css": "Global styles with OKLCH color system defining a dark trading theme with emerald/teal accents for gains and red for losses.",
+  "frontend/tailwind.config.js": "Tailwind configuration with custom trading theme colors, Inter and JetBrains Mono fonts, and extended design tokens for the financial aesthetic.",
+  "frontend/src/contexts/GameModeContext.tsx": "React context and provider for managing the selected game mode state (daily, weekly, monthly, yearly) with localStorage persistence and useGameMode hook for consuming components.",
+  "frontend/src/components/GameModeSelector.tsx": "Game mode selector component displaying four buttons for 24h, 7d, 30d, and 1y modes with active state styling using the useGameMode hook.",
+  "frontend/src/hooks/useGameTimer.ts": "Custom hook that calculates time remaining until next reset for a given game mode with real-time countdown updates every second.",
+  "frontend/src/components/GameTimer.tsx": "Countdown timer component displaying days, hours, minutes, and seconds until the next game mode reset with real-time updates.",
+  "frontend/src/hooks/useWinners.ts": "React Query hook for fetching historical winners data from the backend filtered by game mode.",
+  "frontend/src/components/WinnersSection.tsx": "Winners section component displaying historical winners in a table format with player names, final portfolio values, P&L metrics, and reset timestamps."
+}

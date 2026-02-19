@@ -1,0 +1,56 @@
+{
+  "kind": "implementation_plan",
+  "version": "1.0",
+  "title": "Add ICP holdings display and MAX button to sell interface",
+  "requirements": [
+    {
+      "id": "REQ-23",
+      "summary": "Display the user's current ICP holdings in the sell section of TradingPanel",
+      "acceptanceCriteria": [
+        "The sell tab shows the user's current ICP balance prominently",
+        "The ICP holdings display updates when transactions complete",
+        "The display is clearly labeled as available ICP to sell"
+      ],
+      "file_operations": [
+        {
+          "path": "frontend/src/components/TradingPanel.tsx",
+          "operation": "modify",
+          "description": "Add ICP holdings display in the sell tab by importing usePortfolio hook and rendering the icpBalance value prominently above or near the input field with a label such as 'Available ICP to Sell'. Ensure the display updates reactively when the portfolio query data changes after transactions."
+        }
+      ]
+    },
+    {
+      "id": "REQ-24",
+      "summary": "Add MAX button to sell interface that auto-fills with full ICP holdings",
+      "acceptanceCriteria": [
+        "A MAX button appears in the sell interface near the input field",
+        "Clicking MAX fills the input with the user's full ICP balance",
+        "The MAX button is disabled or hidden when ICP holdings are zero"
+      ],
+      "file_operations": [
+        {
+          "path": "frontend/src/components/TradingPanel.tsx",
+          "operation": "modify",
+          "description": "Add a MAX button in the sell tab positioned near the input field. On click, populate the input with the user's full icpBalance from the portfolio data. The button should be disabled when icpBalance is zero or undefined. Handle both input modes (ICP amount and USD amount) appropriately: in ICP mode, set the ICP amount directly; in USD mode, calculate the equivalent USD value using currentPrice from useICPPriceData."
+        }
+      ]
+    },
+    {
+      "id": "REQ-25",
+      "summary": "Add MAX button to buy interface that auto-fills with maximum purchasable amount",
+      "acceptanceCriteria": [
+        "A MAX button appears in the buy interface near the input field",
+        "When in ICP input mode, MAX calculates and fills the maximum ICP amount purchasable with current cash balance at current ICP price",
+        "When in dollar input mode, MAX fills the input with the user's full cash balance",
+        "The MAX button is disabled when cash balance is zero or insufficient"
+      ],
+      "file_operations": [
+        {
+          "path": "frontend/src/components/TradingPanel.tsx",
+          "operation": "modify",
+          "description": "Add a MAX button in the buy tab positioned near the input field. On click, handle two scenarios based on the current input mode: (1) in USD mode, set the input to the user's full cashBalance from portfolio data; (2) in ICP mode, calculate the maximum ICP purchasable by dividing cashBalance by currentPrice from useICPPriceData, then set that value in the input. The button should be disabled when cashBalance is zero or undefined. Ensure proper number formatting and rounding for calculated values."
+        }
+      ]
+    }
+  ]
+}

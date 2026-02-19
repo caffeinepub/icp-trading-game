@@ -1,0 +1,14 @@
+{
+  "kind": "spec_vs_diff_report",
+  "version": "1.0",
+  "generatedAt": "2026-02-19T03:30:39.481Z",
+  "summary": "The diff implements all three requirements. REQ-23 adds ICP holdings display in the sell section with clear labeling. REQ-24 implements a MAX button for the sell interface that fills the input with full ICP balance. REQ-25 implements a MAX button for the buy interface with mode-aware logic (max ICP in ICP mode, full cash in dollar mode). All acceptance criteria appear to be met based on the visible code.",
+  "missing_requirements": [],
+  "hallucinated_features": [],
+  "confidence": 0.95,
+  "changed_files": [
+    "frontend-file-summaries.txt",
+    "frontend/src/components/TradingPanel.tsx",
+    "project_state.json"
+  ]
+}

@@ -1,0 +1,65 @@
+{
+  "kind": "feature_evidence_report",
+  "features": [
+    {
+      "featureId": "feature-display-the-user-s-current-icp-holdings-amount-in-the-sell-section-of-the-tradingpanel-showing-how-much-icp-is-available-to-sell",
+      "featureTitle": "Display the user's current ICP holdings amount in the sell section of the TradingPanel, showing how much ICP is available to sell",
+      "files": [
+        "frontend/src/components/TradingPanel.tsx"
+      ],
+      "components": [
+        "http-outcalls@3.0.0",
+        "core-infrastructure@1.0.2",
+        "shadcn-ui@1.0.0",
+        "build-template-react@1.0.0",
+        "initial-app@1.0.0",
+        "github-export-icp-cli@1.0.0",
+        "authorization@4.0.0"
+      ],
+      "testIds": [
+        "REQ-23"
+      ],
+      "confidence": "high"
+    },
+    {
+      "featureId": "feature-add-a-max-button-to-the-sell-interface-that-auto-fills-the-input-field-with-the-user-s-full-icp-holdings-allowing-them-to-sell-all-their-icp-with-one-click",
+      "featureTitle": "Add a MAX button to the sell interface that auto-fills the input field with the user's full ICP holdings, allowing them to sell all their ICP with one click",
+      "files": [
+        "frontend/src/components/TradingPanel.tsx"
+      ],
+      "components": [
+        "http-outcalls@3.0.0",
+        "core-infrastructure@1.0.2",
+        "shadcn-ui@1.0.0",
+        "build-template-react@1.0.0",
+        "initial-app@1.0.0",
+        "github-export-icp-cli@1.0.0",
+        "authorization@4.0.0"
+      ],
+      "testIds": [
+        "REQ-24"
+      ],
+      "confidence": "high"
+    },
+    {
+      "featureId": "feature-add-a-max-button-to-the-buy-interface-that-auto-fills-the-input-with-either-the-maximum-icp-purchasable-with-available-cash-when-in-icp-mode-or-the-full-cash-balance-when-in-dollar-mode",
+      "featureTitle": "Add a MAX button to the buy interface that auto-fills the input with either the maximum ICP purchasable with available cash (when in ICP mode) or the full cash balance (when in dollar mode)",
+      "files": [
+        "frontend/src/components/TradingPanel.tsx"
+      ],
+      "components": [
+        "http-outcalls@3.0.0",
+        "core-infrastructure@1.0.2",
+        "shadcn-ui@1.0.0",
+        "build-template-react@1.0.0",
+        "initial-app@1.0.0",
+        "github-export-icp-cli@1.0.0",
+        "authorization@4.0.0"
+      ],
+      "testIds": [
+        "REQ-25"
+      ],
+      "confidence": "high"
+    }
+  ]
+}

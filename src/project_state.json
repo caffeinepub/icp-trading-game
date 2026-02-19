@@ -1,0 +1,286 @@
+{
+  "schemaVersion": "1.0.0",
+  "projectStateVersion": 11,
+  "summary": "ICP trading simulator game with real-time price charts (24h/7d/30d/90d/180d), multiple game modes (24-hour, 7-day, 30-day, 1-year) with automatic resets and winner tracking, $10,000 virtual trading accounts per game mode, buy/sell mechanics with dollar or ICP amount input, and leaderboards showing top performers for each game mode",
+  "architectural_notes": [
+    "Integrate CoinGecko API for real-time ICP price data",
+    "Store player virtual balances and transaction history in backend canister",
+    "Calculate profit/loss based on difference between starting $10,000 and current portfolio value",
+    "Implement admin-only access control for reset functionality (restrict to specific principal or role)",
+    "Support multiple concurrent game modes with independent player accounts and balances per mode",
+    "Implement countdown timers for each game mode (24h, 7d, 30d, 1yr) with automatic reset on expiration",
+    "Store winner history per game mode to display past champions after each reset cycle"
+  ],
+  "known_issues": [
+    "Buy transactions do not deduct virtual cash from player's $10,000 balance",
+    "ICP purchase calculations may be inaccurate or glitching"
+  ],
+  "isFixRequest": true,
+  "existing_features": [
+    {
+      "id": "feature-display-an-interactive-icp-price-chart-on-the-frontend-with-toggleable-timeframe-views-24h-7d-30d-90d-180d-showing-historical-price-movements",
+      "title": "Display an interactive ICP price chart on the frontend with toggleable timeframe views (24h, 7d, 30d, 90d, 180d) showing historical price movements",
+      "reqIds": [
+        "REQ-2"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-implement-buy-and-sell-functionality-allowing-players-to-purchase-and-sell-virtual-icp-tokens-using-their-10-000-virtual-cash-balance-at-current-real-world-icp-prices",
+      "title": "Implement buy and sell functionality allowing players to purchase and sell virtual ICP tokens using their $10,000 virtual cash balance at current real-world ICP prices",
+      "reqIds": [
+        "REQ-4"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-create-a-portfolio-view-showing-the-authenticated-player-s-current-virtual-cash-balance-virtual-icp-holdings-and-total-portfolio-value-in-real-time",
+      "title": "Create a portfolio view showing the authenticated player's current virtual cash balance, virtual ICP holdings, and total portfolio value in real-time",
+      "reqIds": [
+        "REQ-5"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-build-a-weekly-leaderboard-that-calculates-each-player-s-profit-or-loss-at-the-end-of-each-week-and-ranks-players-from-highest-to-lowest-gains",
+      "title": "Build a weekly leaderboard that calculates each player's profit or loss at the end of each week and ranks players from highest to lowest gains",
+      "reqIds": [
+        "REQ-6"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-design-a-cohesive-visual-theme-for-the-trading-game-interface-with-a-financial-trading-aesthetic-using-colors-and-typography-that-convey-professionalism-and-clarity-avoiding-blue-and-purple-unless-specifically-requested",
+      "title": "Design a cohesive visual theme for the trading game interface with a financial/trading aesthetic using colors and typography that convey professionalism and clarity, avoiding blue and purple unless specifically requested",
+      "reqIds": [
+        "REQ-7"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-update-the-frontend-trading-panel-to-display-error-messages-when-transactions-fail-due-to-insufficient-funds-or-insufficient-icp-holdings",
+      "title": "Update the frontend trading panel to display error messages when transactions fail due to insufficient funds or insufficient ICP holdings",
+      "reqIds": [
+        "REQ-12"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-add-an-admin-only-reset-button-to-the-portfolio-view-that-resets-the-authenticated-player-s-cash-balance-to-10-000-and-clears-all-icp-holdings-to-zero",
+      "title": "Add an admin-only reset button to the portfolio view that resets the authenticated player's cash balance to $10,000 and clears all ICP holdings to zero",
+      "reqIds": [
+        "REQ-13"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-create-a-frontend-usetradingactions-hook-function-resetaccount-that-calls-the-backend-reset-account-function-and-invalidates-portfolio-queries-on-success",
+      "title": "Create a frontend useTradingActions hook function resetAccount that calls the backend reset_account function and invalidates portfolio queries on success",
+      "reqIds": [
+        "REQ-16"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-add-a-toggle-or-tab-to-the-tradingpanel-buy-interface-allowing-users-to-switch-between-purchasing-icp-by-specifying-an-icp-amount-or-by-specifying-a-dollar-amount-e-g-10-000-automatically-calculating-the-equivalent-icp-quantity-using-the-current-icp-price",
+      "title": "Add a toggle or tab to the TradingPanel buy interface allowing users to switch between purchasing ICP by specifying an ICP amount or by specifying a dollar amount (e.g., $10,000), automatically calculating the equivalent ICP quantity using the current ICP price",
+      "reqIds": [
+        "REQ-17"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-add-a-game-mode-selector-to-the-frontend-that-allows-users-to-switch-between-24-hour-7-day-30-day-and-1-year-game-modes-updating-the-portfolio-trading-panel-and-leaderboard-to-display-data-specific-to-the-selected-mode",
+      "title": "Add a game mode selector to the frontend that allows users to switch between 24-hour, 7-day, 30-day, and 1-year game modes, updating the portfolio, trading panel, and leaderboard to display data specific to the selected mode",
+      "reqIds": [
+        "REQ-20"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-display-a-countdown-timer-in-the-frontend-showing-time-remaining-until-the-next-reset-for-the-currently-selected-game-mode-24h-7d-30d-or-1y",
+      "title": "Display a countdown timer in the frontend showing time remaining until the next reset for the currently selected game mode (24h, 7d, 30d, or 1y)",
+      "reqIds": [
+        "REQ-21"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-add-a-historical-winners-section-to-the-leaderboard-view-that-displays-past-winners-for-the-selected-game-mode-showing-their-final-portfolio-values-and-profit-loss-percentages-from-previous-reset-periods",
+      "title": "Add a historical winners section to the leaderboard view that displays past winners for the selected game mode, showing their final portfolio values and profit/loss percentages from previous reset periods",
+      "reqIds": [
+        "REQ-22"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-display-the-user-s-current-icp-holdings-amount-in-the-sell-section-of-the-tradingpanel-showing-how-much-icp-is-available-to-sell",
+      "title": "Display the user's current ICP holdings amount in the sell section of the TradingPanel, showing how much ICP is available to sell",
+      "reqIds": [
+        "REQ-23"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-add-a-max-button-to-the-sell-interface-that-auto-fills-the-input-field-with-the-user-s-full-icp-holdings-allowing-them-to-sell-all-their-icp-with-one-click",
+      "title": "Add a MAX button to the sell interface that auto-fills the input field with the user's full ICP holdings, allowing them to sell all their ICP with one click",
+      "reqIds": [
+        "REQ-24"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-add-a-max-button-to-the-buy-interface-that-auto-fills-the-input-with-either-the-maximum-icp-purchasable-with-available-cash-when-in-icp-mode-or-the-full-cash-balance-when-in-dollar-mode",
+      "title": "Add a MAX button to the buy interface that auto-fills the input with either the maximum ICP purchasable with available cash (when in ICP mode) or the full cash balance (when in dollar mode)",
+      "reqIds": [
+        "REQ-25"
+      ],
+      "version": 1
+    }
+  ],
+  "new_feature_requests": [
+    {
+      "id": "AR-1",
+      "summary": "Display ICP price chart with 24h/7d/30d/90d/180d timeframes using CoinGecko API",
+      "reqIds": [],
+      "status": "pending"
+    },
+    {
+      "id": "AR-2",
+      "summary": "Weekly $10,000 virtual trading account per player with buy/sell ICP functionality",
+      "reqIds": [],
+      "status": "pending"
+    },
+    {
+      "id": "AR-3",
+      "summary": "Weekly leaderboard showing players ranked by profit/loss",
+      "reqIds": [],
+      "status": "pending"
+    },
+    {
+      "id": "AR-4",
+      "summary": "Future: Add leverage trading (long/short positions)",
+      "reqIds": [],
+      "status": "pending"
+    },
+    {
+      "id": "AR-5",
+      "summary": "Integrate CoinGecko API to fetch real-time ICP price data with support for multiple timeframes: 24 hour, 7 day, 30 day, 90 day, and 180 day historical data",
+      "reqIds": [
+        "REQ-1"
+      ],
+      "status": "pending"
+    },
+    {
+      "id": "AR-7",
+      "summary": "Create a weekly trading account system where each authenticated player receives $10,000 in virtual currency at the start of each week",
+      "reqIds": [
+        "REQ-3"
+      ],
+      "status": "pending"
+    },
+    {
+      "id": "AR-8",
+      "summary": "Modify the backend buy_icp function to deduct the total purchase cost (ICP amount × current price) from the player's cash balance before adding the ICP to their holdings",
+      "reqIds": [
+        "REQ-8"
+      ],
+      "status": "pending"
+    },
+    {
+      "id": "AR-9",
+      "summary": "Modify the backend sell_icp function to add the total sale proceeds (ICP amount × current price) to the player's cash balance after deducting the ICP from their holdings",
+      "reqIds": [
+        "REQ-9"
+      ],
+      "status": "pending"
+    },
+    {
+      "id": "AR-10",
+      "summary": "Add validation to prevent buy transactions when the total cost exceeds the player's available cash balance",
+      "reqIds": [
+        "REQ-10"
+      ],
+      "status": "pending"
+    },
+    {
+      "id": "AR-11",
+      "summary": "Add validation to prevent sell transactions when the ICP amount exceeds the player's available ICP holdings",
+      "reqIds": [
+        "REQ-11"
+      ],
+      "status": "pending"
+    },
+    {
+      "id": "AR-12",
+      "summary": "Add admin-only button to reset player's cash balance to $10,000 and clear all ICP holdings",
+      "reqIds": [],
+      "status": "pending"
+    },
+    {
+      "id": "AR-13",
+      "summary": "Fix calculation glitch in ICP purchase transactions to ensure accurate deduction and holding amounts",
+      "reqIds": [],
+      "status": "pending"
+    },
+    {
+      "id": "AR-15",
+      "summary": "Review and fix the ICP purchase calculation logic in the backend buy_icp function to ensure accurate deduction of cash and addition of ICP holdings, eliminating any calculation glitches",
+      "reqIds": [
+        "REQ-14"
+      ],
+      "status": "pending"
+    },
+    {
+      "id": "AR-16",
+      "summary": "Add a backend function reset_account that resets a player's cash balance to 10000.0 and icp_balance to 0.0, with admin authorization check",
+      "reqIds": [
+        "REQ-15"
+      ],
+      "status": "pending"
+    },
+    {
+      "id": "AR-17",
+      "summary": "Add toggle to purchase ICP using dollar amount input (e.g., $10,000) instead of ICP amount, automatically calculating equivalent ICP",
+      "reqIds": [],
+      "status": "pending"
+    },
+    {
+      "id": "AR-18",
+      "summary": "Implement multiple game modes: 24-hour, 7-day, 30-day, and 1-year, each with independent accounts and automatic reset timers",
+      "reqIds": [],
+      "status": "pending"
+    },
+    {
+      "id": "AR-19",
+      "summary": "Track and display historical winners for each game mode (24h, 7d, 30d, 1yr) after each reset period",
+      "reqIds": [],
+      "status": "pending"
+    },
+    {
+      "id": "AR-21",
+      "summary": "Implement four independent game modes in the backend: 24-hour, 7-day, 30-day, and 1-year, each with separate player accounts (cash balance and ICP holdings), isolated leaderboards, and automatic reset timers that trigger at the end of each period",
+      "reqIds": [
+        "REQ-18"
+      ],
+      "status": "pending"
+    },
+    {
+      "id": "AR-22",
+      "summary": "Store historical winners for each game mode in the backend, capturing the top-performing player(s) at the end of each reset period (24h, 7d, 30d, 1y) along with their final portfolio value and profit/loss",
+      "reqIds": [
+        "REQ-19"
+      ],
+      "status": "pending"
+    },
+    {
+      "id": "AR-23",
+      "summary": "Display current ICP balance on the sell interface and add a MAX button that auto-fills the input with the player's full ICP holdings for selling or full cash balance for buying",
+      "reqIds": [],
+      "status": "pending"
+    }
+  ],
+  "projectName": "ICP Trading Game",
+  "clarification_mode": "instant",
+  "clarification_rounds": 0
+}
