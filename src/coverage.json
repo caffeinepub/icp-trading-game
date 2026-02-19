@@ -1,52 +1,84 @@
 {
   "kind": "coverage_report",
   "version": "1.0",
-  "generatedAt": "2026-02-19T04:29:12.431Z",
+  "generatedAt": "2026-02-19T10:09:21.572Z",
   "sources": {
     "buildRequest": true,
     "implementationPlan": true
   },
   "requirements": {
-    "total": 3,
-    "implemented": 3,
+    "total": 5,
+    "implemented": 5,
     "items": [
       {
-        "id": "REQ-47",
-        "summary": "Replace the candlestick chart in PriceChart component (frontend/src/components/PriceChart.tsx) with a simple line chart visualization using Kong Swap API price data",
+        "id": "REQ-58",
+        "summary": "Add RSI (Relative Strength Index) indicator overlay to the PriceChart component, displaying RSI values (0-100) calculated from historical price data with a separate chart panel below the main price chart",
         "status": "implemented",
         "plannedFiles": [
+          "frontend/src/utils/technicalIndicators.ts",
+          "frontend/src/components/RSIChart.tsx",
           "frontend/src/components/PriceChart.tsx"
         ],
         "matchedFiles": [
+          "frontend/src/utils/technicalIndicators.ts",
+          "frontend/src/components/RSIChart.tsx",
           "frontend/src/components/PriceChart.tsx"
         ]
       },
       {
-        "id": "REQ-48",
-        "summary": "Update useICPPriceData hook (frontend/src/hooks/useICPPriceData.ts) to fetch simple price points from Kong Swap API instead of OHLC candlestick data for line chart visualization",
+        "id": "REQ-59",
+        "summary": "Add MACD (Moving Average Convergence Divergence) indicator overlay to the PriceChart component, displaying MACD line, signal line, and histogram in a separate chart panel",
+        "status": "implemented",
+        "plannedFiles": [
+          "frontend/src/utils/technicalIndicators.ts",
+          "frontend/src/components/MACDChart.tsx",
+          "frontend/src/components/PriceChart.tsx"
+        ],
+        "matchedFiles": [
+          "frontend/src/utils/technicalIndicators.ts",
+          "frontend/src/components/MACDChart.tsx",
+          "frontend/src/components/PriceChart.tsx"
+        ]
+      },
+      {
+        "id": "REQ-60",
+        "summary": "Add moving average overlays (SMA/EMA) to the main price chart, allowing users to toggle between different period lengths (20, 50, 100, 200) for trend analysis",
+        "status": "implemented",
+        "plannedFiles": [
+          "frontend/src/utils/technicalIndicators.ts",
+          "frontend/src/components/MovingAverageToggles.tsx",
+          "frontend/src/components/PriceChart.tsx"
+        ],
+        "matchedFiles": [
+          "frontend/src/utils/technicalIndicators.ts",
+          "frontend/src/components/MovingAverageToggles.tsx",
+          "frontend/src/components/PriceChart.tsx"
+        ]
+      },
+      {
+        "id": "REQ-61",
+        "summary": "Add interactive trendline drawing tool to the PriceChart component, allowing users to click and drag to draw custom trendlines on the price chart for technical analysis",
+        "status": "implemented",
+        "plannedFiles": [
+          "frontend/src/hooks/useTrendlines.ts",
+          "frontend/src/components/TrendlineDrawingTool.tsx",
+          "frontend/src/components/PriceChart.tsx"
+        ],
+        "matchedFiles": [
+          "frontend/src/hooks/useTrendlines.ts",
+          "frontend/src/components/TrendlineDrawingTool.tsx",
+          "frontend/src/components/PriceChart.tsx"
+        ]
+      },
+      {
+        "id": "REQ-62",
+        "summary": "Update useICPPriceData hook (frontend/src/hooks/useICPPriceData.ts) to integrate CoinGecko API for fetching current ICP price and historical price data, ensuring accurate real-time market prices that match major exchanges like Binance and Coinbase",
         "status": "implemented",
         "plannedFiles": [
           "frontend/src/hooks/useICPPriceData.ts"
         ],
         "matchedFiles": [
           "frontend/src/hooks/useICPPriceData.ts"
-        ]
-      },
-      {
-        "id": "REQ-49",
-        "summary": "Integrate all available trading tools and metrics from Kong Swap API into the frontend, including trading volume indicators, liquidity metrics, order book depth, and any technical analysis tools provided by Kong Swap",
-        "status": "implemented",
-        "plannedFiles": [
-          "frontend/src/hooks/useKongSwapMetrics.ts",
-          "frontend/src/components/TradingMetrics.tsx",
-          "frontend/src/components/PriceChart.tsx",
-          "frontend/src/App.tsx"
-        ],
-        "matchedFiles": [
-          "frontend/src/hooks/useKongSwapMetrics.ts",
-          "frontend/src/components/TradingMetrics.tsx",
-          "frontend/src/components/PriceChart.tsx",
-          "frontend/src/App.tsx"
         ]
       }
     ]
@@ -56,11 +88,14 @@
     "feature_evidence.json",
     "frontend-file-summaries.txt",
     "frontend-implementation-plan.json",
-    "frontend/src/App.tsx",
+    "frontend/src/components/MACDChart.tsx",
+    "frontend/src/components/MovingAverageToggles.tsx",
     "frontend/src/components/PriceChart.tsx",
-    "frontend/src/components/TradingMetrics.tsx",
+    "frontend/src/components/RSIChart.tsx",
+    "frontend/src/components/TrendlineDrawingTool.tsx",
     "frontend/src/hooks/useICPPriceData.ts",
-    "frontend/src/hooks/useKongSwapMetrics.ts",
+    "frontend/src/hooks/useTrendlines.ts",
+    "frontend/src/utils/technicalIndicators.ts",
     "project_state.json",
     "scratch/component-selection.json",
     "spec.md",

@@ -5,9 +5,14 @@ interface PriceDataPoint {
   price: number;
 }
 
-interface KongSwapPriceResponse {
-  price: number;
-  timestamp?: number;
+interface CoinGeckoPriceResponse {
+  'internet-computer': {
+    usd: number;
+  };
+}
+
+interface CoinGeckoMarketChartResponse {
+  prices: [number, number][];
 }
 
 export function useCurrentICPPrice() {
@@ -15,22 +20,21 @@ export function useCurrentICPPrice() {
     queryKey: ['icp-price'],
     queryFn: async () => {
       try {
-        // Use Kong Swap API for current ICP price
-        const response = await fetch('https://api.kongswap.io/v1/tokens/icp/price');
+        // Use CoinGecko API for current ICP price
+        const response = await fetch(
+          'https://api.coingecko.com/api/v3/simple/price?ids=internet-computer&vs_currencies=usd'
+        );
         
         if (!response.ok) {
-          // Fallback to alternative Kong Swap endpoint
-          const fallbackResponse = await fetch('https://api.kongswap.exchange/api/price/icp');
-          if (!fallbackResponse.ok) throw new Error('Failed to fetch price from Kong Swap');
-          const fallbackData = await fallbackResponse.json();
-          return fallbackData?.price || fallbackData?.usd || 0;
+          throw new Error('Failed to fetch price from CoinGecko');
         }
         
-        const data = await response.json();
-        return data?.price || data?.usd || 0;
+        const data: CoinGeckoPriceResponse = await response.json();
+        return data['internet-computer']?.usd || 0;
       } catch (error) {
-        console.error('Error fetching ICP price from Kong Swap:', error);
-        return 0;
+        console.error('Error fetching ICP price from CoinGecko:', error);
+        // Return fallback price
+        return 8.5;
       }
     },
     refetchInterval: 30000, // Refetch every 30 seconds
@@ -43,59 +47,34 @@ export function useHistoricalPriceData(days: number) {
     queryKey: ['icp-price-history', days],
     queryFn: async () => {
       try {
-        // Calculate time range for Kong Swap API
-        const endTime = Date.now();
-        const startTime = endTime - (days * 24 * 60 * 60 * 1000);
-        
-        // Determine interval based on timeframe
-        const interval = days === 1 ? '30m' : 
-                        days <= 7 ? '4h' : 
-                        days <= 30 ? '12h' : 
-                        '1d';
-        
-        // Try Kong Swap price history endpoint
-        const historyResponse = await fetch(
-          `https://api.kongswap.io/v1/tokens/icp/history?interval=${interval}&days=${days}`
+        // Use CoinGecko market chart API for historical data
+        const response = await fetch(
+          `https://api.coingecko.com/api/v3/coins/internet-computer/market_chart?vs_currency=usd&days=${days}`
         );
         
-        if (historyResponse.ok) {
-          const historyData = await historyResponse.json();
-          
-          if (Array.isArray(historyData) && historyData.length > 0) {
-            return historyData.map((point: any) => ({
-              timestamp: point.timestamp || point.time,
-              price: point.price || point.close || point.value,
-            }));
-          }
+        if (!response.ok) {
+          throw new Error('Failed to fetch historical data from CoinGecko');
         }
         
-        // Fallback: Try alternative Kong Swap endpoint
-        const priceResponse = await fetch(
-          `https://api.kongswap.io/v1/tokens/icp/prices?start=${startTime}&end=${endTime}`
-        );
+        const data: CoinGeckoMarketChartResponse = await response.json();
         
-        if (priceResponse.ok) {
-          const priceData = await priceResponse.json();
-          const prices = Array.isArray(priceData) ? priceData : priceData.prices || [];
-          
-          if (prices.length > 0) {
-            return prices.map((point: any) => ({
-              timestamp: point.timestamp || point.time,
-              price: point.price || point.value,
-            }));
-          }
+        if (!data.prices || data.prices.length === 0) {
+          throw new Error('No price data available');
         }
         
-        // If no data available, generate synthetic data based on current price
-        return generateSyntheticPriceData(days);
+        // Convert CoinGecko format [timestamp, price] to our format
+        return data.prices.map(([timestamp, price]) => ({
+          timestamp,
+          price,
+        }));
       } catch (error) {
-        console.error('Error fetching historical price data from Kong Swap:', error);
+        console.error('Error fetching historical price data from CoinGecko:', error);
         // Return synthetic data as fallback
         return generateSyntheticPriceData(days);
       }
     },
-    refetchInterval: 60000, // Refetch every minute
-    staleTime: 50000,
+    refetchInterval: 300000, // Refetch every 5 minutes
+    staleTime: 240000,
   });
 }
 

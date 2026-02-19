@@ -1,74 +1,134 @@
 {
   "kind": "implementation_plan",
   "version": "1.0",
-  "title": "Replace candlestick chart with line chart and integrate Kong Swap trading tools",
+  "title": "Add technical analysis indicators and switch to accurate CoinGecko pricing",
   "requirements": [
     {
-      "id": "REQ-47",
-      "summary": "Replace the candlestick chart in PriceChart component with a simple line chart visualization using Kong Swap API price data",
+      "id": "REQ-58",
+      "summary": "Add RSI indicator overlay to PriceChart component with separate panel below main chart showing values 0-100 with oversold/overbought reference lines",
       "acceptanceCriteria": [
-        "Candlestick chart is removed from PriceChart component",
-        "Line chart displays ICP price over time for selected timeframe (24h, 7d, 30d, 90d, 180d)",
-        "Chart uses Kong Swap API data fetched by useICPPriceData hook",
-        "Chart maintains existing margin statistics overlay and liquidation price reference lines",
-        "Price change indicators continue to function correctly"
+        "RSI indicator is displayed in a separate panel below the main price chart",
+        "RSI values range from 0-100 and are calculated from historical ICP price data",
+        "RSI panel includes horizontal reference lines at 30 (oversold) and 70 (overbought) levels",
+        "RSI values update automatically when timeframe changes (24h, 7d, 30d, 90d, 180d)"
       ],
       "file_operations": [
         {
+          "path": "frontend/src/utils/technicalIndicators.ts",
+          "operation": "create",
+          "description": "Create utility module with RSI calculation function that takes price array and period (default 14) and returns array of RSI values. RSI formula: RSI = 100 - (100 / (1 + RS)) where RS = average gain / average loss over period."
+        },
+        {
+          "path": "frontend/src/components/RSIChart.tsx",
+          "operation": "create",
+          "description": "Create RSI chart component that renders RSI values in a separate panel using Recharts. Include horizontal reference lines at 30 (oversold, green) and 70 (overbought, red). Display RSI value range 0-100 on Y-axis. Style to match existing PriceChart dark theme with emerald/red accents."
+        },
+        {
           "path": "frontend/src/components/PriceChart.tsx",
           "operation": "modify",
-          "description": "Replace the candlestick chart implementation with a simple line chart that plots timestamp-price pairs. Remove all OHLC-related rendering logic (candlestick bars, wicks, and shadows). Implement a line chart that connects price points over time using the transformed data structure from useICPPriceData. Maintain the existing margin statistics overlay component, liquidation price reference lines, and price change indicators. Ensure the chart supports all timeframe selections (24H, 7D, 30D, 90D, 180D) and preserves responsive behavior and styling."
+          "description": "Integrate RSIChart component below the main price chart. Pass historical price data and selected timeframe to RSIChart. Calculate RSI values from priceData using the technicalIndicators utility. Maintain responsive layout with proper spacing between main chart and RSI panel."
         }
       ]
     },
     {
-      "id": "REQ-48",
-      "summary": "Update useICPPriceData hook to fetch simple price points from Kong Swap API instead of OHLC candlestick data for line chart visualization",
+      "id": "REQ-59",
+      "summary": "Add MACD indicator overlay to PriceChart component with MACD line, signal line, and histogram in separate panel below RSI",
       "acceptanceCriteria": [
-        "useICPPriceData hook fetches timestamp and price pairs from Kong Swap API",
-        "Data structure is optimized for line chart rendering (no OHLC fields)",
-        "getCurrentPrice function continues to work with Kong Swap API",
-        "All existing timeframes (24h, 7d, 30d, 90d, 180d) are supported",
-        "Fallback endpoints and error handling remain in place"
+        "MACD indicator is displayed in a separate panel below the RSI panel",
+        "MACD panel shows three components: MACD line, signal line, and histogram bars",
+        "MACD values are calculated from historical ICP price data using standard 12/26/9 parameters",
+        "Histogram bars are colored green for positive values and red for negative values",
+        "MACD values update automatically when timeframe changes"
+      ],
+      "file_operations": [
+        {
+          "path": "frontend/src/utils/technicalIndicators.ts",
+          "operation": "modify",
+          "description": "Add MACD calculation functions: calculateEMA for exponential moving average, calculateMACD that returns {macdLine, signalLine, histogram} using standard 12/26/9 parameters. MACD = EMA(12) - EMA(26), Signal = EMA(9) of MACD, Histogram = MACD - Signal."
+        },
+        {
+          "path": "frontend/src/components/MACDChart.tsx",
+          "operation": "create",
+          "description": "Create MACD chart component rendering MACD line (blue), signal line (orange), and histogram bars using Recharts ComposedChart. Color histogram bars green for positive values, red for negative. Include zero reference line. Style to match dark trading theme."
+        },
+        {
+          "path": "frontend/src/components/PriceChart.tsx",
+          "operation": "modify",
+          "description": "Integrate MACDChart component below RSIChart. Pass historical price data to calculate MACD values. Ensure proper vertical stacking of main chart, RSI panel, and MACD panel with consistent styling and spacing."
+        }
+      ]
+    },
+    {
+      "id": "REQ-60",
+      "summary": "Add moving average overlays (SMA/EMA) to main price chart with toggleable visibility for 20, 50, 100, 200 periods",
+      "acceptanceCriteria": [
+        "Moving average lines are overlaid directly on the main price chart",
+        "Users can toggle visibility of individual moving averages (20, 50, 100, 200 periods)",
+        "Each moving average is displayed with a distinct color for easy identification",
+        "Moving averages are calculated from historical ICP price data and update with timeframe changes",
+        "Toggle controls are accessible and clearly labeled with period lengths"
+      ],
+      "file_operations": [
+        {
+          "path": "frontend/src/utils/technicalIndicators.ts",
+          "operation": "modify",
+          "description": "Add calculateSMA function that takes price array and period, returns simple moving average array. Add calculateEMA if not already present from MACD requirement."
+        },
+        {
+          "path": "frontend/src/components/MovingAverageToggles.tsx",
+          "operation": "create",
+          "description": "Create component with four toggle buttons for MA periods (20, 50, 100, 200). Each toggle displays period label with corresponding color indicator. Use state to track enabled/disabled status for each MA. Style as compact inline controls matching trading theme."
+        },
+        {
+          "path": "frontend/src/components/PriceChart.tsx",
+          "operation": "modify",
+          "description": "Add MovingAverageToggles component above the main price chart. Calculate SMA values for enabled periods (20, 50, 100, 200) from priceData. Overlay MA lines on main chart using Recharts Line components with distinct colors: MA20 (yellow), MA50 (cyan), MA100 (magenta), MA200 (orange). Only render lines for enabled MAs."
+        }
+      ]
+    },
+    {
+      "id": "REQ-61",
+      "summary": "Add interactive trendline drawing tool to PriceChart allowing users to click and drag custom trendlines for technical analysis",
+      "acceptanceCriteria": [
+        "Users can click and drag on the price chart to draw custom trendlines",
+        "Trendlines persist on the chart until manually removed by the user",
+        "Users can draw multiple trendlines on the same chart",
+        "Trendlines scale appropriately when timeframe or zoom level changes",
+        "A clear button or tool allows users to remove individual trendlines or clear all at once"
+      ],
+      "file_operations": [
+        {
+          "path": "frontend/src/hooks/useTrendlines.ts",
+          "operation": "create",
+          "description": "Create hook managing trendline state with array of trendlines (each containing start/end coordinates and id). Provide functions: addTrendline, removeTrendline, clearAllTrendlines. Store trendlines in component state (not localStorage since they should reset on page refresh)."
+        },
+        {
+          "path": "frontend/src/components/TrendlineDrawingTool.tsx",
+          "operation": "create",
+          "description": "Create component that overlays on PriceChart for drawing trendlines. Handle mouse events (onMouseDown, onMouseMove, onMouseUp) to capture click-drag gestures. Convert pixel coordinates to chart data coordinates. Render SVG lines for each trendline. Include drawing mode toggle button and clear all button."
+        },
+        {
+          "path": "frontend/src/components/PriceChart.tsx",
+          "operation": "modify",
+          "description": "Integrate TrendlineDrawingTool as overlay on main price chart. Pass chart dimensions and scale functions to convert between pixel and data coordinates. Ensure trendlines scale correctly when timeframe changes by storing them in data coordinate space rather than pixel space. Add control buttons for enabling drawing mode and clearing trendlines."
+        }
+      ]
+    },
+    {
+      "id": "REQ-62",
+      "summary": "Update useICPPriceData hook to integrate CoinGecko API for accurate real-time ICP pricing that matches major exchanges",
+      "acceptanceCriteria": [
+        "CoinGecko API is used to fetch current ICP spot price",
+        "Historical price data is fetched from CoinGecko for all supported timeframes (24h, 7d, 30d, 90d, 180d)",
+        "Price data accurately reflects ICP prices from major exchanges",
+        "API requests include proper error handling and fallback mechanisms",
+        "Price updates occur at appropriate intervals to maintain accuracy"
       ],
       "file_operations": [
         {
           "path": "frontend/src/hooks/useICPPriceData.ts",
           "operation": "modify",
-          "description": "Refactor the data fetching and transformation logic to return simple price point arrays with timestamp-price pairs instead of OHLC candlestick data. Update the Kong Swap API endpoints to request price history data suitable for line chart rendering. Transform the API response to extract only timestamp and close/current price values, removing open, high, low, and volume fields. Ensure getCurrentPrice function continues to work correctly with the Kong Swap API. Maintain all existing timeframe support (24h, 7d, 30d, 90d, 180d), fallback endpoints, retry logic, and error handling. Update TypeScript types to reflect the simplified data structure."
-        }
-      ]
-    },
-    {
-      "id": "REQ-49",
-      "summary": "Integrate all available trading tools and metrics from Kong Swap API into the frontend, including trading volume indicators, liquidity metrics, order book depth, and technical analysis tools",
-      "acceptanceCriteria": [
-        "Trading volume data is fetched from Kong Swap API and displayed on the chart or in a separate panel",
-        "Liquidity metrics from Kong Swap are integrated and visible to users",
-        "Order book depth data (if available from Kong Swap API) is displayed",
-        "Any technical indicators provided by Kong Swap API (moving averages, RSI, MACD, etc.) are integrated and displayed",
-        "All Kong Swap tools are accessible and functional in the trading interface"
-      ],
-      "file_operations": [
-        {
-          "path": "frontend/src/hooks/useKongSwapMetrics.ts",
-          "operation": "create",
-          "description": "Create a new hook that fetches comprehensive trading metrics from Kong Swap API including trading volume data, liquidity pool metrics, order book depth information, and any available technical indicators (moving averages, RSI, MACD, Bollinger Bands, etc.). Structure the hook to return separate data fields for each metric type with loading and error states. Implement proper error handling, retry logic, and fallback mechanisms consistent with the existing useICPPriceData hook. Support real-time or periodic data refresh to keep metrics current. Include TypeScript types for all Kong Swap metric responses."
-        },
-        {
-          "path": "frontend/src/components/TradingMetrics.tsx",
-          "operation": "create",
-          "description": "Create a comprehensive trading metrics display component that consumes data from useKongSwapMetrics hook. Display trading volume indicators with visual charts or bars showing volume over time. Show liquidity metrics including pool depth, TVL, and liquidity ratios. Render order book depth visualization if available from Kong Swap API. Display technical indicators (moving averages, RSI, MACD, etc.) with appropriate visual representations (line overlays, oscillator charts, signal indicators). Organize metrics into logical sections or tabs for easy navigation. Use consistent styling with existing components and ensure responsive design for all screen sizes."
-        },
-        {
-          "path": "frontend/src/components/PriceChart.tsx",
-          "operation": "modify",
-          "description": "Integrate the TradingMetrics component into the price chart view. Add a toggle or tab system to allow users to show/hide the trading metrics panel alongside the line chart. If trading volume should overlay on the chart, add a volume bar chart below the price line chart sharing the same time axis. Ensure the metrics panel or overlay does not interfere with existing margin statistics, liquidation price lines, or chart interactivity. Wire up the metrics display to update alongside the price chart when timeframe changes."
-        },
-        {
-          "path": "frontend/src/App.tsx",
-          "operation": "modify",
-          "description": "Ensure the TradingMetrics component or Kong Swap tools are accessible from the main trading interface. If necessary, add navigation or layout adjustments to accommodate the new metrics panel. Verify that all Kong Swap trading tools are visible and functional within the existing tabbed navigation structure (Trade/Positions/Portfolio/Leaderboard). Ensure proper initialization and data flow for the new Kong Swap metrics throughout the application lifecycle."
+          "description": "Replace Kong Swap API calls with CoinGecko API. Use CoinGecko endpoint: GET https://api.coingecko.com/api/v3/simple/price?ids=internet-computer&vs_currencies=usd for current price. Use GET https://api.coingecko.com/api/v3/coins/internet-computer/market_chart?vs_currency=usd&days={days} for historical data where days maps to timeframe (1 for 24H, 7 for 7D, 30 for 30D, 90 for 90D, 180 for 180D). Parse response.prices array containing [timestamp, price] pairs. Include error handling with fallback to synthetic data if API fails. Set appropriate refetch intervals (30s for current price, 5min for historical)."
         }
       ]
     }

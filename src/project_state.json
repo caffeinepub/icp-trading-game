@@ -1,7 +1,7 @@
 {
   "schemaVersion": "1.0.0",
-  "projectStateVersion": 19,
-  "summary": "ICP trading simulator game with real-time price charts (24h/7d/30d/90d/180d), multiple game modes (24-hour, 7-day, 30-day, 1-year) with automatic resets and winner tracking, $10,000 virtual trading accounts per game mode, buy/sell mechanics with dollar or ICP amount input, leaderboards showing top performers for each game mode, leveraged trading with multiple leverage levels (2x, 3x, 5x, 10x, 20x) for long/short positions, margin call statistics displayed on charts, and candlestick chart visualization",
+  "projectStateVersion": 23,
+  "summary": "ICP trading simulator game with real-time price charts (24h/7d/30d/90d/180d), multiple game modes (24-hour, 7-day, 30-day, 1-year) with automatic resets and winner tracking, $10,000 virtual trading accounts per game mode, buy/sell mechanics with dollar or ICP amount input, leaderboards showing top performers for each game mode, leveraged trading with multiple leverage levels (2x, 3x, 5x, 10x, 20x) for long/short positions, margin call statistics displayed on charts, and technical analysis tools including RSI, MACD, and trendline drawing capabilities using accurate real-time ICP price data",
   "architectural_notes": [
     "Store player virtual balances and transaction history in backend canister",
     "Calculate profit/loss based on difference between starting $10,000 and current portfolio value",
@@ -11,13 +11,13 @@
     "Store winner history per game mode to display past champions after each reset cycle",
     "Support multiple leverage levels (2x, 3x, 5x, 10x, 20x) for leveraged positions",
     "Display margin call levels and liquidation prices on price charts",
-    "Replace CoinGecko API integration with Kong Swap API for real-time ICP price and OHLC data",
-    "Switch from candlestick chart to line chart for better visualization accuracy with Kong Swap data"
+    "Replace Kong Swap API with a reliable crypto data provider (e.g., CoinGecko, CoinMarketCap, or Binance API) for accurate real-time ICP spot prices",
+    "Integrate technical analysis library (e.g., Lightweight Charts with technical indicators or TradingView widgets) for RSI, MACD, moving averages, and other technical indicators"
   ],
   "known_issues": [
     "Buy transactions do not deduct virtual cash from player's $10,000 balance",
     "ICP purchase calculations may be inaccurate or glitching",
-    "Candlestick chart display is incorrect and not rendering Kong Swap data properly"
+    "Kong Swap API provides inaccurate ICP price data that does not match real market prices from major exchanges"
   ],
   "isFixRequest": true,
   "existing_features": [
@@ -268,6 +268,74 @@
         "REQ-49"
       ],
       "version": 1
+    },
+    {
+      "id": "feature-remove-all-kong-swap-api-integration-from-the-useicppricedata-hook-frontend-src-hooks-useicppricedata-ts-including-getcurrentprice-and-gethistoricaldata-functions-that-fetch-from-kong-swap-endpoints",
+      "title": "Remove all Kong Swap API integration from the useICPPriceData hook (frontend/src/hooks/useICPPriceData.ts), including getCurrentPrice and getHistoricalData functions that fetch from Kong Swap endpoints",
+      "reqIds": [
+        "REQ-50"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-integrate-coingecko-api-in-the-useicppricedata-hook-to-fetch-current-icp-price-and-historical-price-data-for-supported-timeframes-24h-7d-30d-90d-180d-using-accurate-real-time-market-data",
+      "title": "Integrate CoinGecko API in the useICPPriceData hook to fetch current ICP price and historical price data for supported timeframes (24h, 7d, 30d, 90d, 180d) using accurate real-time market data",
+      "reqIds": [
+        "REQ-51"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-remove-kong-swap-metrics-integration-from-usekongswapmetrics-hook-frontend-src-hooks-usekongswapmetrics-ts-and-tradingmetrics-component-frontend-src-components-tradingmetrics-tsx",
+      "title": "Remove Kong Swap metrics integration from useKongSwapMetrics hook (frontend/src/hooks/useKongSwapMetrics.ts) and TradingMetrics component (frontend/src/components/TradingMetrics.tsx)",
+      "reqIds": [
+        "REQ-52"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-add-rsi-relative-strength-index-indicator-overlay-to-the-pricechart-component-displaying-rsi-values-0-100-calculated-from-historical-price-data-with-a-separate-chart-panel-below-the-main-price-chart",
+      "title": "Add RSI (Relative Strength Index) indicator overlay to the PriceChart component, displaying RSI values (0-100) calculated from historical price data with a separate chart panel below the main price chart",
+      "reqIds": [
+        "REQ-53",
+        "REQ-58"
+      ],
+      "version": 2
+    },
+    {
+      "id": "feature-add-macd-moving-average-convergence-divergence-indicator-overlay-to-the-pricechart-component-displaying-macd-line-signal-line-and-histogram-in-a-separate-chart-panel",
+      "title": "Add MACD (Moving Average Convergence Divergence) indicator overlay to the PriceChart component, displaying MACD line, signal line, and histogram in a separate chart panel",
+      "reqIds": [
+        "REQ-54",
+        "REQ-59"
+      ],
+      "version": 2
+    },
+    {
+      "id": "feature-add-moving-average-overlays-sma-ema-to-the-main-price-chart-allowing-users-to-toggle-between-different-period-lengths-20-50-100-200-for-trend-analysis",
+      "title": "Add moving average overlays (SMA/EMA) to the main price chart, allowing users to toggle between different period lengths (20, 50, 100, 200) for trend analysis",
+      "reqIds": [
+        "REQ-55",
+        "REQ-60"
+      ],
+      "version": 2
+    },
+    {
+      "id": "feature-add-interactive-trendline-drawing-tool-to-the-pricechart-component-allowing-users-to-click-and-drag-to-draw-custom-trendlines-on-the-price-chart-for-technical-analysis",
+      "title": "Add interactive trendline drawing tool to the PriceChart component, allowing users to click and drag to draw custom trendlines on the price chart for technical analysis",
+      "reqIds": [
+        "REQ-56",
+        "REQ-61"
+      ],
+      "version": 2
+    },
+    {
+      "id": "feature-update-useicppricedata-hook-frontend-src-hooks-useicppricedata-ts-to-integrate-coingecko-api-for-fetching-current-icp-price-and-historical-price-data-ensuring-accurate-real-time-market-prices-that-match-major-exchanges-like-binance-and-coinbase",
+      "title": "Update useICPPriceData hook (frontend/src/hooks/useICPPriceData.ts) to integrate CoinGecko API for fetching current ICP price and historical price data, ensuring accurate real-time market prices that match major exchanges like Binance and Coinbase",
+      "reqIds": [
+        "REQ-62"
+      ],
+      "version": 1
     }
   ],
   "new_feature_requests": [
@@ -484,37 +552,29 @@
       "status": "pending"
     },
     {
-      "id": "AR-34",
-      "summary": "Replace CoinGecko API with Kong Swap API for ICP price data and candlestick chart visualization",
+      "id": "AR-41",
+      "summary": "Replace Kong Swap API with a reliable data source that provides accurate real-time ICP prices matching major exchanges (e.g., Binance, Coinbase)",
       "reqIds": [],
       "status": "pending"
     },
     {
-      "id": "AR-37",
-      "summary": "Update the PriceChart component (frontend/src/components/PriceChart.tsx) to render candlestick data from Kong Swap API instead of CoinGecko, ensuring the chart visualization remains functional with the new data source",
+      "id": "AR-42",
+      "summary": "Integrate technical analysis indicators (RSI, MACD, moving averages, Bollinger Bands) overlay on the price chart",
+      "reqIds": [],
+      "status": "pending"
+    },
+    {
+      "id": "AR-43",
+      "summary": "Add trendline drawing tools allowing users to manually draw trendlines on the price chart for technical analysis",
+      "reqIds": [],
+      "status": "pending"
+    },
+    {
+      "id": "AR-51",
+      "summary": "Update the backend get_current_icp_price function in main.mo to fetch accurate real-time ICP price from CoinGecko API instead of Kong Swap API",
       "reqIds": [
-        "REQ-45"
+        "REQ-57"
       ],
-      "status": "pending"
-    },
-    {
-      "id": "AR-38",
-      "summary": "Update the backend ICP price fetching logic in backend/main.mo to use Kong Swap API instead of CoinGecko for real-time price data used in trading calculations",
-      "reqIds": [
-        "REQ-46"
-      ],
-      "status": "pending"
-    },
-    {
-      "id": "AR-39",
-      "summary": "Replace candlestick chart with a simple line chart visualization using Kong Swap API data",
-      "reqIds": [],
-      "status": "pending"
-    },
-    {
-      "id": "AR-40",
-      "summary": "Integrate all available trading tools from Kong Swap API (trading volume, liquidity metrics, order book depth, technical indicators)",
-      "reqIds": [],
       "status": "pending"
     }
   ],
