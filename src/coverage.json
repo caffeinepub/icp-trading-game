@@ -1,7 +1,7 @@
 {
   "kind": "coverage_report",
   "version": "1.0",
-  "generatedAt": "2026-02-19T03:30:39.485Z",
+  "generatedAt": "2026-02-19T04:29:12.431Z",
   "sources": {
     "buildRequest": true,
     "implementationPlan": true
@@ -11,36 +11,42 @@
     "implemented": 3,
     "items": [
       {
-        "id": "REQ-23",
-        "summary": "Display the user's current ICP holdings amount in the sell section of the TradingPanel, showing how much ICP is available to sell",
+        "id": "REQ-47",
+        "summary": "Replace the candlestick chart in PriceChart component (frontend/src/components/PriceChart.tsx) with a simple line chart visualization using Kong Swap API price data",
         "status": "implemented",
         "plannedFiles": [
-          "frontend/src/components/TradingPanel.tsx"
+          "frontend/src/components/PriceChart.tsx"
         ],
         "matchedFiles": [
-          "frontend/src/components/TradingPanel.tsx"
+          "frontend/src/components/PriceChart.tsx"
         ]
       },
       {
-        "id": "REQ-24",
-        "summary": "Add a MAX button to the sell interface that auto-fills the input field with the user's full ICP holdings, allowing them to sell all their ICP with one click",
+        "id": "REQ-48",
+        "summary": "Update useICPPriceData hook (frontend/src/hooks/useICPPriceData.ts) to fetch simple price points from Kong Swap API instead of OHLC candlestick data for line chart visualization",
         "status": "implemented",
         "plannedFiles": [
-          "frontend/src/components/TradingPanel.tsx"
+          "frontend/src/hooks/useICPPriceData.ts"
         ],
         "matchedFiles": [
-          "frontend/src/components/TradingPanel.tsx"
+          "frontend/src/hooks/useICPPriceData.ts"
         ]
       },
       {
-        "id": "REQ-25",
-        "summary": "Add a MAX button to the buy interface that auto-fills the input with either the maximum ICP purchasable with available cash (when in ICP mode) or the full cash balance (when in dollar mode)",
+        "id": "REQ-49",
+        "summary": "Integrate all available trading tools and metrics from Kong Swap API into the frontend, including trading volume indicators, liquidity metrics, order book depth, and any technical analysis tools provided by Kong Swap",
         "status": "implemented",
         "plannedFiles": [
-          "frontend/src/components/TradingPanel.tsx"
+          "frontend/src/hooks/useKongSwapMetrics.ts",
+          "frontend/src/components/TradingMetrics.tsx",
+          "frontend/src/components/PriceChart.tsx",
+          "frontend/src/App.tsx"
         ],
         "matchedFiles": [
-          "frontend/src/components/TradingPanel.tsx"
+          "frontend/src/hooks/useKongSwapMetrics.ts",
+          "frontend/src/components/TradingMetrics.tsx",
+          "frontend/src/components/PriceChart.tsx",
+          "frontend/src/App.tsx"
         ]
       }
     ]
@@ -50,7 +56,11 @@
     "feature_evidence.json",
     "frontend-file-summaries.txt",
     "frontend-implementation-plan.json",
-    "frontend/src/components/TradingPanel.tsx",
+    "frontend/src/App.tsx",
+    "frontend/src/components/PriceChart.tsx",
+    "frontend/src/components/TradingMetrics.tsx",
+    "frontend/src/hooks/useICPPriceData.ts",
+    "frontend/src/hooks/useKongSwapMetrics.ts",
     "project_state.json",
     "scratch/component-selection.json",
     "spec.md",

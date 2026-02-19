@@ -20,6 +20,18 @@ export type GameMode = { 'monthly' : null } |
   { 'yearly' : null } |
   { 'daily' : null } |
   { 'weekly' : null };
+export interface LeveragedPosition {
+  'leverage' : number,
+  'isOpen' : boolean,
+  'positionType' : PositionType,
+  'liquidationPrice' : number,
+  'entryPrice' : number,
+  'margin' : number,
+  'amountICP' : number,
+  'openedAt' : Time,
+}
+export type PositionType = { 'long' : null } |
+  { 'short' : null };
 export type Time = bigint;
 export interface TransformationInput {
   'context' : Uint8Array,
@@ -50,16 +62,26 @@ export interface _SERVICE {
   '_initializeAccessControlWithSecret' : ActorMethod<[string], undefined>,
   'assignCallerUserRole' : ActorMethod<[Principal, UserRole], undefined>,
   'buyICP' : ActorMethod<[GameMode, number, number], undefined>,
+  'closePosition' : ActorMethod<[GameMode, bigint, number], undefined>,
   'createAccount' : ActorMethod<[GameMode], undefined>,
   'getAccount' : ActorMethod<[GameMode, Principal], [] | [Account]>,
   'getCallerUserProfile' : ActorMethod<[], [] | [UserProfile]>,
   'getCallerUserRole' : ActorMethod<[], UserRole>,
   'getICPPrice' : ActorMethod<[], number>,
   'getLeaderboard' : ActorMethod<[GameMode], Array<[Principal, Account]>>,
+  'getOpenPositions' : ActorMethod<[GameMode], Array<LeveragedPosition>>,
   'getUserProfile' : ActorMethod<[Principal], [] | [UserProfile]>,
   'getWinners' : ActorMethod<[GameMode], Array<Winner>>,
   'isCallerAdmin' : ActorMethod<[], boolean>,
   'markWinner' : ActorMethod<[GameMode, Winner], undefined>,
+  'openLongPosition' : ActorMethod<
+    [GameMode, number, number, number],
+    undefined
+  >,
+  'openShortPosition' : ActorMethod<
+    [GameMode, number, number, number],
+    undefined
+  >,
   'resetAccount' : ActorMethod<[GameMode], undefined>,
   'saveCallerUserProfile' : ActorMethod<[UserProfile], undefined>,
   'sellICP' : ActorMethod<[GameMode, number, number], undefined>,

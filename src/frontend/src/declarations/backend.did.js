@@ -27,6 +27,20 @@ export const Account = IDL.Record({
   'cashBalance' : IDL.Float64,
 });
 export const UserProfile = IDL.Record({ 'name' : IDL.Text });
+export const PositionType = IDL.Variant({
+  'long' : IDL.Null,
+  'short' : IDL.Null,
+});
+export const LeveragedPosition = IDL.Record({
+  'leverage' : IDL.Float64,
+  'isOpen' : IDL.Bool,
+  'positionType' : PositionType,
+  'liquidationPrice' : IDL.Float64,
+  'entryPrice' : IDL.Float64,
+  'margin' : IDL.Float64,
+  'amountICP' : IDL.Float64,
+  'openedAt' : Time,
+});
 export const Winner = IDL.Record({
   'finalPortfolioValue' : IDL.Float64,
   'winner' : IDL.Principal,
@@ -56,6 +70,7 @@ export const idlService = IDL.Service({
   '_initializeAccessControlWithSecret' : IDL.Func([IDL.Text], [], []),
   'assignCallerUserRole' : IDL.Func([IDL.Principal, UserRole], [], []),
   'buyICP' : IDL.Func([GameMode, IDL.Float64, IDL.Float64], [], []),
+  'closePosition' : IDL.Func([GameMode, IDL.Nat, IDL.Float64], [], []),
   'createAccount' : IDL.Func([GameMode], [], []),
   'getAccount' : IDL.Func(
       [GameMode, IDL.Principal],
@@ -70,6 +85,11 @@ export const idlService = IDL.Service({
       [IDL.Vec(IDL.Tuple(IDL.Principal, Account))],
       ['query'],
     ),
+  'getOpenPositions' : IDL.Func(
+      [GameMode],
+      [IDL.Vec(LeveragedPosition)],
+      ['query'],
+    ),
   'getUserProfile' : IDL.Func(
       [IDL.Principal],
       [IDL.Opt(UserProfile)],
@@ -78,6 +98,16 @@ export const idlService = IDL.Service({
   'getWinners' : IDL.Func([GameMode], [IDL.Vec(Winner)], ['query']),
   'isCallerAdmin' : IDL.Func([], [IDL.Bool], ['query']),
   'markWinner' : IDL.Func([GameMode, Winner], [], []),
+  'openLongPosition' : IDL.Func(
+      [GameMode, IDL.Float64, IDL.Float64, IDL.Float64],
+      [],
+      [],
+    ),
+  'openShortPosition' : IDL.Func(
+      [GameMode, IDL.Float64, IDL.Float64, IDL.Float64],
+      [],
+      [],
+    ),
   'resetAccount' : IDL.Func([GameMode], [], []),
   'saveCallerUserProfile' : IDL.Func([UserProfile], [], []),
   'sellICP' : IDL.Func([GameMode, IDL.Float64, IDL.Float64], [], []),
@@ -110,6 +140,17 @@ export const idlFactory = ({ IDL }) => {
     'cashBalance' : IDL.Float64,
   });
   const UserProfile = IDL.Record({ 'name' : IDL.Text });
+  const PositionType = IDL.Variant({ 'long' : IDL.Null, 'short' : IDL.Null });
+  const LeveragedPosition = IDL.Record({
+    'leverage' : IDL.Float64,
+    'isOpen' : IDL.Bool,
+    'positionType' : PositionType,
+    'liquidationPrice' : IDL.Float64,
+    'entryPrice' : IDL.Float64,
+    'margin' : IDL.Float64,
+    'amountICP' : IDL.Float64,
+    'openedAt' : Time,
+  });
   const Winner = IDL.Record({
     'finalPortfolioValue' : IDL.Float64,
     'winner' : IDL.Principal,
@@ -136,6 +177,7 @@ export const idlFactory = ({ IDL }) => {
     '_initializeAccessControlWithSecret' : IDL.Func([IDL.Text], [], []),
     'assignCallerUserRole' : IDL.Func([IDL.Principal, UserRole], [], []),
     'buyICP' : IDL.Func([GameMode, IDL.Float64, IDL.Float64], [], []),
+    'closePosition' : IDL.Func([GameMode, IDL.Nat, IDL.Float64], [], []),
     'createAccount' : IDL.Func([GameMode], [], []),
     'getAccount' : IDL.Func(
         [GameMode, IDL.Principal],
@@ -150,6 +192,11 @@ export const idlFactory = ({ IDL }) => {
         [IDL.Vec(IDL.Tuple(IDL.Principal, Account))],
         ['query'],
       ),
+    'getOpenPositions' : IDL.Func(
+        [GameMode],
+        [IDL.Vec(LeveragedPosition)],
+        ['query'],
+      ),
     'getUserProfile' : IDL.Func(
         [IDL.Principal],
         [IDL.Opt(UserProfile)],
@@ -158,6 +205,16 @@ export const idlFactory = ({ IDL }) => {
     'getWinners' : IDL.Func([GameMode], [IDL.Vec(Winner)], ['query']),
     'isCallerAdmin' : IDL.Func([], [IDL.Bool], ['query']),
     'markWinner' : IDL.Func([GameMode, Winner], [], []),
+    'openLongPosition' : IDL.Func(
+        [GameMode, IDL.Float64, IDL.Float64, IDL.Float64],
+        [],
+        [],
+      ),
+    'openShortPosition' : IDL.Func(
+        [GameMode, IDL.Float64, IDL.Float64, IDL.Float64],
+        [],
+        [],
+      ),
     'resetAccount' : IDL.Func([GameMode], [], []),
     'saveCallerUserProfile' : IDL.Func([UserProfile], [], []),
     'sellICP' : IDL.Func([GameMode, IDL.Float64, IDL.Float64], [], []),

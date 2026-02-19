@@ -2,10 +2,10 @@
   "kind": "feature_evidence_report",
   "features": [
     {
-      "featureId": "feature-display-the-user-s-current-icp-holdings-amount-in-the-sell-section-of-the-tradingpanel-showing-how-much-icp-is-available-to-sell",
-      "featureTitle": "Display the user's current ICP holdings amount in the sell section of the TradingPanel, showing how much ICP is available to sell",
+      "featureId": "feature-replace-the-candlestick-chart-in-pricechart-component-frontend-src-components-pricechart-tsx-with-a-simple-line-chart-visualization-using-kong-swap-api-price-data",
+      "featureTitle": "Replace the candlestick chart in PriceChart component (frontend/src/components/PriceChart.tsx) with a simple line chart visualization using Kong Swap API price data",
       "files": [
-        "frontend/src/components/TradingPanel.tsx"
+        "frontend/src/components/PriceChart.tsx"
       ],
       "components": [
         "http-outcalls@3.0.0",
@@ -17,15 +17,15 @@
         "authorization@4.0.0"
       ],
       "testIds": [
-        "REQ-23"
+        "REQ-47"
       ],
       "confidence": "high"
     },
     {
-      "featureId": "feature-add-a-max-button-to-the-sell-interface-that-auto-fills-the-input-field-with-the-user-s-full-icp-holdings-allowing-them-to-sell-all-their-icp-with-one-click",
-      "featureTitle": "Add a MAX button to the sell interface that auto-fills the input field with the user's full ICP holdings, allowing them to sell all their ICP with one click",
+      "featureId": "feature-update-useicppricedata-hook-frontend-src-hooks-useicppricedata-ts-to-fetch-simple-price-points-from-kong-swap-api-instead-of-ohlc-candlestick-data-for-line-chart-visualization",
+      "featureTitle": "Update useICPPriceData hook (frontend/src/hooks/useICPPriceData.ts) to fetch simple price points from Kong Swap API instead of OHLC candlestick data for line chart visualization",
       "files": [
-        "frontend/src/components/TradingPanel.tsx"
+        "frontend/src/hooks/useICPPriceData.ts"
       ],
       "components": [
         "http-outcalls@3.0.0",
@@ -37,15 +37,18 @@
         "authorization@4.0.0"
       ],
       "testIds": [
-        "REQ-24"
+        "REQ-48"
       ],
       "confidence": "high"
     },
     {
-      "featureId": "feature-add-a-max-button-to-the-buy-interface-that-auto-fills-the-input-with-either-the-maximum-icp-purchasable-with-available-cash-when-in-icp-mode-or-the-full-cash-balance-when-in-dollar-mode",
-      "featureTitle": "Add a MAX button to the buy interface that auto-fills the input with either the maximum ICP purchasable with available cash (when in ICP mode) or the full cash balance (when in dollar mode)",
+      "featureId": "feature-integrate-all-available-trading-tools-and-metrics-from-kong-swap-api-into-the-frontend-including-trading-volume-indicators-liquidity-metrics-order-book-depth-and-any-technical-analysis-tools-provided-by-kong-swap",
+      "featureTitle": "Integrate all available trading tools and metrics from Kong Swap API into the frontend, including trading volume indicators, liquidity metrics, order book depth, and any technical analysis tools provided by Kong Swap",
       "files": [
-        "frontend/src/components/TradingPanel.tsx"
+        "frontend/src/App.tsx",
+        "frontend/src/components/PriceChart.tsx",
+        "frontend/src/components/TradingMetrics.tsx",
+        "frontend/src/hooks/useKongSwapMetrics.ts"
       ],
       "components": [
         "http-outcalls@3.0.0",
@@ -57,7 +60,7 @@
         "authorization@4.0.0"
       ],
       "testIds": [
-        "REQ-25"
+        "REQ-49"
       ],
       "confidence": "high"
     }

@@ -1,19 +1,23 @@
 {
   "schemaVersion": "1.0.0",
-  "projectStateVersion": 11,
-  "summary": "ICP trading simulator game with real-time price charts (24h/7d/30d/90d/180d), multiple game modes (24-hour, 7-day, 30-day, 1-year) with automatic resets and winner tracking, $10,000 virtual trading accounts per game mode, buy/sell mechanics with dollar or ICP amount input, and leaderboards showing top performers for each game mode",
+  "projectStateVersion": 19,
+  "summary": "ICP trading simulator game with real-time price charts (24h/7d/30d/90d/180d), multiple game modes (24-hour, 7-day, 30-day, 1-year) with automatic resets and winner tracking, $10,000 virtual trading accounts per game mode, buy/sell mechanics with dollar or ICP amount input, leaderboards showing top performers for each game mode, leveraged trading with multiple leverage levels (2x, 3x, 5x, 10x, 20x) for long/short positions, margin call statistics displayed on charts, and candlestick chart visualization",
   "architectural_notes": [
-    "Integrate CoinGecko API for real-time ICP price data",
     "Store player virtual balances and transaction history in backend canister",
     "Calculate profit/loss based on difference between starting $10,000 and current portfolio value",
     "Implement admin-only access control for reset functionality (restrict to specific principal or role)",
     "Support multiple concurrent game modes with independent player accounts and balances per mode",
     "Implement countdown timers for each game mode (24h, 7d, 30d, 1yr) with automatic reset on expiration",
-    "Store winner history per game mode to display past champions after each reset cycle"
+    "Store winner history per game mode to display past champions after each reset cycle",
+    "Support multiple leverage levels (2x, 3x, 5x, 10x, 20x) for leveraged positions",
+    "Display margin call levels and liquidation prices on price charts",
+    "Replace CoinGecko API integration with Kong Swap API for real-time ICP price and OHLC data",
+    "Switch from candlestick chart to line chart for better visualization accuracy with Kong Swap data"
   ],
   "known_issues": [
     "Buy transactions do not deduct virtual cash from player's $10,000 balance",
-    "ICP purchase calculations may be inaccurate or glitching"
+    "ICP purchase calculations may be inaccurate or glitching",
+    "Candlestick chart display is incorrect and not rendering Kong Swap data properly"
   ],
   "isFixRequest": true,
   "existing_features": [
@@ -134,6 +138,134 @@
       "title": "Add a MAX button to the buy interface that auto-fills the input with either the maximum ICP purchasable with available cash (when in ICP mode) or the full cash balance (when in dollar mode)",
       "reqIds": [
         "REQ-25"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-create-a-frontend-positions-component-that-displays-all-active-leveraged-positions-in-a-table-showing-position-type-leverage-2x-entry-price-current-price-amount-unrealized-p-l-and-a-close-button-for-each-position",
+      "title": "Create a frontend Positions component that displays all active leveraged positions in a table showing position type, leverage (2x), entry price, current price, amount, unrealized P&L, and a close button for each position",
+      "reqIds": [
+        "REQ-31"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-add-a-leverage-tab-to-the-tradingpanel-component-with-controls-to-open-long-or-short-positions-at-2x-leverage-showing-required-margin-position-size-and-validation-for-sufficient-cash",
+      "title": "Add a Leverage tab to the TradingPanel component with controls to open long or short positions at 2x leverage, showing required margin, position size, and validation for sufficient cash",
+      "reqIds": [
+        "REQ-32"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-update-the-portfolio-component-to-include-leveraged-positions-value-in-total-portfolio-calculation-showing-total-margin-locked-and-total-unrealized-p-l-separately",
+      "title": "Update the Portfolio component to include leveraged positions value in total portfolio calculation, showing total margin locked and total unrealized P&L separately",
+      "reqIds": [
+        "REQ-33"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-create-custom-hooks-usepositions-and-useleverageactions-for-fetching-active-positions-and-executing-open-close-position-actions-with-query-invalidation",
+      "title": "Create custom hooks usePositions and useLeverageActions for fetching active positions and executing open/close position actions with query invalidation",
+      "reqIds": [
+        "REQ-34"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-update-leaderboard-calculations-to-include-unrealized-p-l-from-leveraged-positions-in-each-player-s-total-portfolio-value-for-ranking-purposes",
+      "title": "Update leaderboard calculations to include unrealized P&L from leveraged positions in each player's total portfolio value for ranking purposes",
+      "reqIds": [
+        "REQ-35"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-update-the-frontend-leverage-tab-in-tradingpanel-to-include-a-leverage-selector-allowing-users-to-choose-between-2x-3x-5x-10x-and-20x-leverage-before-opening-long-or-short-positions",
+      "title": "Update the frontend Leverage tab in TradingPanel to include a leverage selector allowing users to choose between 2x, 3x, 5x, 10x, and 20x leverage before opening long or short positions",
+      "reqIds": [
+        "REQ-37"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-update-the-positions-component-to-display-the-leverage-multiplier-for-each-active-position-in-the-table",
+      "title": "Update the Positions component to display the leverage multiplier for each active position in the table",
+      "reqIds": [
+        "REQ-38"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-add-margin-statistics-overlay-to-the-pricechart-component-showing-total-margin-used-available-margin-remaining-cash-margin-usage-percentage-and-nearest-liquidation-price-for-active-positions",
+      "title": "Add margin statistics overlay to the PriceChart component showing total margin used, available margin (remaining cash), margin usage percentage, and nearest liquidation price for active positions",
+      "reqIds": [
+        "REQ-39"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-calculate-and-display-liquidation-prices-for-leveraged-positions-on-the-chart-indicating-the-price-level-at-which-each-position-would-be-liquidated-based-on-its-leverage-and-entry-price",
+      "title": "Calculate and display liquidation prices for leveraged positions on the chart, indicating the price level at which each position would be liquidated based on its leverage and entry price",
+      "reqIds": [
+        "REQ-40"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-replace-the-line-chart-in-pricechart-component-with-a-candlestick-chart-showing-ohlc-open-high-low-close-data-for-icp-price-movements",
+      "title": "Replace the line chart in PriceChart component with a candlestick chart showing OHLC (Open, High, Low, Close) data for ICP price movements",
+      "reqIds": [
+        "REQ-41"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-update-the-useicppricedata-hook-to-fetch-ohlc-candlestick-data-from-the-coingecko-api-instead-of-simple-price-points-providing-open-high-low-and-close-values-for-each-time-interval",
+      "title": "Update the useICPPriceData hook to fetch OHLC candlestick data from the CoinGecko API instead of simple price points, providing open, high, low, and close values for each time interval",
+      "reqIds": [
+        "REQ-42"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-remove-all-coingecko-api-integration-from-the-frontend-useicppricedata-hook-frontend-src-hooks-useicppricedata-ts-including-getcurrentprice-and-gethistoricaldata-functions-that-fetch-from-coingecko-endpoints",
+      "title": "Remove all CoinGecko API integration from the frontend useICPPriceData hook (frontend/src/hooks/useICPPriceData.ts), including getCurrentPrice and getHistoricalData functions that fetch from CoinGecko endpoints",
+      "reqIds": [
+        "REQ-43"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-integrate-kong-swap-api-in-the-useicppricedata-hook-to-fetch-current-icp-price-and-ohlc-candlestick-data-for-the-supported-timeframes-24h-7d-30d-90d-180d-using-kong-swap-s-dex-trading-data-endpoints",
+      "title": "Integrate Kong Swap API in the useICPPriceData hook to fetch current ICP price and OHLC candlestick data for the supported timeframes (24h, 7d, 30d, 90d, 180d), using Kong Swap's DEX trading data endpoints",
+      "reqIds": [
+        "REQ-44"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-replace-the-candlestick-chart-in-pricechart-component-frontend-src-components-pricechart-tsx-with-a-simple-line-chart-visualization-using-kong-swap-api-price-data",
+      "title": "Replace the candlestick chart in PriceChart component (frontend/src/components/PriceChart.tsx) with a simple line chart visualization using Kong Swap API price data",
+      "reqIds": [
+        "REQ-47"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-update-useicppricedata-hook-frontend-src-hooks-useicppricedata-ts-to-fetch-simple-price-points-from-kong-swap-api-instead-of-ohlc-candlestick-data-for-line-chart-visualization",
+      "title": "Update useICPPriceData hook (frontend/src/hooks/useICPPriceData.ts) to fetch simple price points from Kong Swap API instead of OHLC candlestick data for line chart visualization",
+      "reqIds": [
+        "REQ-48"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-integrate-all-available-trading-tools-and-metrics-from-kong-swap-api-into-the-frontend-including-trading-volume-indicators-liquidity-metrics-order-book-depth-and-any-technical-analysis-tools-provided-by-kong-swap",
+      "title": "Integrate all available trading tools and metrics from Kong Swap API into the frontend, including trading volume indicators, liquidity metrics, order book depth, and any technical analysis tools provided by Kong Swap",
+      "reqIds": [
+        "REQ-49"
       ],
       "version": 1
     }
@@ -276,6 +408,112 @@
     {
       "id": "AR-23",
       "summary": "Display current ICP balance on the sell interface and add a MAX button that auto-fills the input with the player's full ICP holdings for selling or full cash balance for buying",
+      "reqIds": [],
+      "status": "pending"
+    },
+    {
+      "id": "AR-24",
+      "summary": "Add basic 2x leveraged trading with long and short positions",
+      "reqIds": [],
+      "status": "pending"
+    },
+    {
+      "id": "AR-25",
+      "summary": "Add backend data structures to track leveraged positions for each player per game mode, storing position type (long/short), leverage multiplier (2x), entry price, ICP amount, and timestamp",
+      "reqIds": [
+        "REQ-26"
+      ],
+      "status": "pending"
+    },
+    {
+      "id": "AR-26",
+      "summary": "Implement backend function to open a leveraged long position at 2x leverage, deducting the required margin (position_size / 2) from cash balance and recording the entry price",
+      "reqIds": [
+        "REQ-27"
+      ],
+      "status": "pending"
+    },
+    {
+      "id": "AR-27",
+      "summary": "Implement backend function to open a leveraged short position at 2x leverage, deducting the required margin (position_size / 2) from cash balance and recording the entry price",
+      "reqIds": [
+        "REQ-28"
+      ],
+      "status": "pending"
+    },
+    {
+      "id": "AR-28",
+      "summary": "Implement backend function to close a leveraged position, calculating profit/loss based on entry price vs current price with 2x multiplier, returning margin plus/minus P&L to cash balance",
+      "reqIds": [
+        "REQ-29"
+      ],
+      "status": "pending"
+    },
+    {
+      "id": "AR-29",
+      "summary": "Add backend query function to retrieve all active leveraged positions for the authenticated player in the current game mode, including unrealized P&L calculations",
+      "reqIds": [
+        "REQ-30"
+      ],
+      "status": "pending"
+    },
+    {
+      "id": "AR-30",
+      "summary": "Add support for multiple leverage levels beyond 2x (3x, 5x, 10x, 20x) for long and short positions",
+      "reqIds": [],
+      "status": "pending"
+    },
+    {
+      "id": "AR-31",
+      "summary": "Display margin call statistics on the price chart, showing margin requirements and liquidation levels for active positions",
+      "reqIds": [],
+      "status": "pending"
+    },
+    {
+      "id": "AR-32",
+      "summary": "Replace line chart with candlestick chart visualization showing OHLC (Open, High, Low, Close) data for ICP price movements",
+      "reqIds": [],
+      "status": "pending"
+    },
+    {
+      "id": "AR-33",
+      "summary": "Add support for 3x, 5x, 10x, and 20x leverage multipliers to the backend open_long_position and open_short_position functions, allowing users to select their leverage level when opening positions",
+      "reqIds": [
+        "REQ-36"
+      ],
+      "status": "pending"
+    },
+    {
+      "id": "AR-34",
+      "summary": "Replace CoinGecko API with Kong Swap API for ICP price data and candlestick chart visualization",
+      "reqIds": [],
+      "status": "pending"
+    },
+    {
+      "id": "AR-37",
+      "summary": "Update the PriceChart component (frontend/src/components/PriceChart.tsx) to render candlestick data from Kong Swap API instead of CoinGecko, ensuring the chart visualization remains functional with the new data source",
+      "reqIds": [
+        "REQ-45"
+      ],
+      "status": "pending"
+    },
+    {
+      "id": "AR-38",
+      "summary": "Update the backend ICP price fetching logic in backend/main.mo to use Kong Swap API instead of CoinGecko for real-time price data used in trading calculations",
+      "reqIds": [
+        "REQ-46"
+      ],
+      "status": "pending"
+    },
+    {
+      "id": "AR-39",
+      "summary": "Replace candlestick chart with a simple line chart visualization using Kong Swap API data",
+      "reqIds": [],
+      "status": "pending"
+    },
+    {
+      "id": "AR-40",
+      "summary": "Integrate all available trading tools from Kong Swap API (trading volume, liquidity metrics, order book depth, technical indicators)",
       "reqIds": [],
       "status": "pending"
     }

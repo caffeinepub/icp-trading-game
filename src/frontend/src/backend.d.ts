@@ -12,6 +12,16 @@ export interface http_request_result {
     body: Uint8Array;
     headers: Array<http_header>;
 }
+export interface LeveragedPosition {
+    leverage: number;
+    isOpen: boolean;
+    positionType: PositionType;
+    liquidationPrice: number;
+    entryPrice: number;
+    margin: number;
+    amountICP: number;
+    openedAt: Time;
+}
 export interface Account {
     pnl: number;
     lastUpdated: Time;
@@ -47,6 +57,10 @@ export enum GameMode {
     daily = "daily",
     weekly = "weekly"
 }
+export enum PositionType {
+    long_ = "long",
+    short_ = "short"
+}
 export enum UserRole {
     admin = "admin",
     user = "user",
@@ -55,16 +69,20 @@ export enum UserRole {
 export interface backendInterface {
     assignCallerUserRole(user: Principal, role: UserRole): Promise<void>;
     buyICP(gameMode: GameMode, amount: number, price: number): Promise<void>;
+    closePosition(gameMode: GameMode, positionIndex: bigint, currentPrice: number): Promise<void>;
     createAccount(gameMode: GameMode): Promise<void>;
     getAccount(gameMode: GameMode, user: Principal): Promise<Account | null>;
     getCallerUserProfile(): Promise<UserProfile | null>;
     getCallerUserRole(): Promise<UserRole>;
     getICPPrice(): Promise<number>;
     getLeaderboard(gameMode: GameMode): Promise<Array<[Principal, Account]>>;
+    getOpenPositions(gameMode: GameMode): Promise<Array<LeveragedPosition>>;
     getUserProfile(user: Principal): Promise<UserProfile | null>;
     getWinners(gameMode: GameMode): Promise<Array<Winner>>;
     isCallerAdmin(): Promise<boolean>;
     markWinner(gameMode: GameMode, winner: Winner): Promise<void>;
+    openLongPosition(gameMode: GameMode, amountICP: number, price: number, leverage: number): Promise<void>;
+    openShortPosition(gameMode: GameMode, amountICP: number, price: number, leverage: number): Promise<void>;
     resetAccount(gameMode: GameMode): Promise<void>;
     saveCallerUserProfile(profile: UserProfile): Promise<void>;
     sellICP(gameMode: GameMode, amount: number, price: number): Promise<void>;

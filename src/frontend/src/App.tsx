@@ -8,6 +8,8 @@ import PriceChart from './components/PriceChart';
 import TradingPanel from './components/TradingPanel';
 import Portfolio from './components/Portfolio';
 import Leaderboard from './components/Leaderboard';
+import Positions from './components/Positions';
+import TradingMetrics from './components/TradingMetrics';
 import GameModeSelector from './components/GameModeSelector';
 import GameTimer from './components/GameTimer';
 import { Toaster } from '@/components/ui/sonner';
@@ -87,21 +89,27 @@ function AppContent() {
           </div>
 
           <Tabs defaultValue="trade" className="space-y-6">
-            <TabsList className="grid w-full max-w-md mx-auto grid-cols-3">
+            <TabsList className="grid w-full max-w-2xl mx-auto grid-cols-4">
               <TabsTrigger value="trade">Trade</TabsTrigger>
+              <TabsTrigger value="positions">Positions</TabsTrigger>
               <TabsTrigger value="portfolio">Portfolio</TabsTrigger>
               <TabsTrigger value="leaderboard">Leaderboard</TabsTrigger>
             </TabsList>
 
             <TabsContent value="trade" className="space-y-6">
               <div className="grid lg:grid-cols-3 gap-6">
-                <div className="lg:col-span-2">
+                <div className="lg:col-span-2 space-y-6">
                   <PriceChart />
+                  <TradingMetrics days={7} />
                 </div>
                 <div>
                   <TradingPanel />
                 </div>
               </div>
+            </TabsContent>
+
+            <TabsContent value="positions">
+              <Positions />
             </TabsContent>
 
             <TabsContent value="portfolio">

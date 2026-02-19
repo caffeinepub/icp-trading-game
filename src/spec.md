@@ -1,12 +1,11 @@
 # Specification
 
 ## Summary
-**Goal:** Enhance the TradingPanel with ICP holdings display and MAX buttons for both buy and sell interfaces.
+**Goal:** Replace candlestick chart with line chart and integrate Kong Swap trading tools into the frontend.
 
 **Planned changes:**
-- Display the user's current ICP holdings in the sell section
-- Add a MAX button to the sell interface that auto-fills the input with the user's full ICP balance
-- Add a MAX button to the buy interface that auto-fills with maximum purchasable ICP (in ICP mode) or full cash balance (in dollar mode)
-- Ensure MAX buttons are disabled when balances are zero or insufficient
+- Replace candlestick chart visualization in PriceChart component with a simple line chart
+- Update useICPPriceData hook to fetch timestamp/price pairs instead of OHLC data from Kong Swap API
+- Integrate Kong Swap trading tools including volume indicators, liquidity metrics, order book depth, and technical analysis tools
 
-**User-visible outcome:** Users can see their available ICP holdings when selling, and use MAX buttons to quickly fill inputs with their maximum tradeable amounts in both buy and sell modes.
+**User-visible outcome:** Users see a line chart displaying ICP price trends with enhanced trading tools from Kong Swap, including volume data, liquidity metrics, and technical indicators, while maintaining all margin statistics and liquidation price overlays.

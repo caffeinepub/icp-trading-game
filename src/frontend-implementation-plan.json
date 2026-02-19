@@ -1,54 +1,74 @@
 {
   "kind": "implementation_plan",
   "version": "1.0",
-  "title": "Add ICP holdings display and MAX button to sell interface",
+  "title": "Replace candlestick chart with line chart and integrate Kong Swap trading tools",
   "requirements": [
     {
-      "id": "REQ-23",
-      "summary": "Display the user's current ICP holdings in the sell section of TradingPanel",
+      "id": "REQ-47",
+      "summary": "Replace the candlestick chart in PriceChart component with a simple line chart visualization using Kong Swap API price data",
       "acceptanceCriteria": [
-        "The sell tab shows the user's current ICP balance prominently",
-        "The ICP holdings display updates when transactions complete",
-        "The display is clearly labeled as available ICP to sell"
+        "Candlestick chart is removed from PriceChart component",
+        "Line chart displays ICP price over time for selected timeframe (24h, 7d, 30d, 90d, 180d)",
+        "Chart uses Kong Swap API data fetched by useICPPriceData hook",
+        "Chart maintains existing margin statistics overlay and liquidation price reference lines",
+        "Price change indicators continue to function correctly"
       ],
       "file_operations": [
         {
-          "path": "frontend/src/components/TradingPanel.tsx",
+          "path": "frontend/src/components/PriceChart.tsx",
           "operation": "modify",
-          "description": "Add ICP holdings display in the sell tab by importing usePortfolio hook and rendering the icpBalance value prominently above or near the input field with a label such as 'Available ICP to Sell'. Ensure the display updates reactively when the portfolio query data changes after transactions."
+          "description": "Replace the candlestick chart implementation with a simple line chart that plots timestamp-price pairs. Remove all OHLC-related rendering logic (candlestick bars, wicks, and shadows). Implement a line chart that connects price points over time using the transformed data structure from useICPPriceData. Maintain the existing margin statistics overlay component, liquidation price reference lines, and price change indicators. Ensure the chart supports all timeframe selections (24H, 7D, 30D, 90D, 180D) and preserves responsive behavior and styling."
         }
       ]
     },
     {
-      "id": "REQ-24",
-      "summary": "Add MAX button to sell interface that auto-fills with full ICP holdings",
+      "id": "REQ-48",
+      "summary": "Update useICPPriceData hook to fetch simple price points from Kong Swap API instead of OHLC candlestick data for line chart visualization",
       "acceptanceCriteria": [
-        "A MAX button appears in the sell interface near the input field",
-        "Clicking MAX fills the input with the user's full ICP balance",
-        "The MAX button is disabled or hidden when ICP holdings are zero"
+        "useICPPriceData hook fetches timestamp and price pairs from Kong Swap API",
+        "Data structure is optimized for line chart rendering (no OHLC fields)",
+        "getCurrentPrice function continues to work with Kong Swap API",
+        "All existing timeframes (24h, 7d, 30d, 90d, 180d) are supported",
+        "Fallback endpoints and error handling remain in place"
       ],
       "file_operations": [
         {
-          "path": "frontend/src/components/TradingPanel.tsx",
+          "path": "frontend/src/hooks/useICPPriceData.ts",
           "operation": "modify",
-          "description": "Add a MAX button in the sell tab positioned near the input field. On click, populate the input with the user's full icpBalance from the portfolio data. The button should be disabled when icpBalance is zero or undefined. Handle both input modes (ICP amount and USD amount) appropriately: in ICP mode, set the ICP amount directly; in USD mode, calculate the equivalent USD value using currentPrice from useICPPriceData."
+          "description": "Refactor the data fetching and transformation logic to return simple price point arrays with timestamp-price pairs instead of OHLC candlestick data. Update the Kong Swap API endpoints to request price history data suitable for line chart rendering. Transform the API response to extract only timestamp and close/current price values, removing open, high, low, and volume fields. Ensure getCurrentPrice function continues to work correctly with the Kong Swap API. Maintain all existing timeframe support (24h, 7d, 30d, 90d, 180d), fallback endpoints, retry logic, and error handling. Update TypeScript types to reflect the simplified data structure."
         }
       ]
     },
     {
-      "id": "REQ-25",
-      "summary": "Add MAX button to buy interface that auto-fills with maximum purchasable amount",
+      "id": "REQ-49",
+      "summary": "Integrate all available trading tools and metrics from Kong Swap API into the frontend, including trading volume indicators, liquidity metrics, order book depth, and technical analysis tools",
       "acceptanceCriteria": [
-        "A MAX button appears in the buy interface near the input field",
-        "When in ICP input mode, MAX calculates and fills the maximum ICP amount purchasable with current cash balance at current ICP price",
-        "When in dollar input mode, MAX fills the input with the user's full cash balance",
-        "The MAX button is disabled when cash balance is zero or insufficient"
+        "Trading volume data is fetched from Kong Swap API and displayed on the chart or in a separate panel",
+        "Liquidity metrics from Kong Swap are integrated and visible to users",
+        "Order book depth data (if available from Kong Swap API) is displayed",
+        "Any technical indicators provided by Kong Swap API (moving averages, RSI, MACD, etc.) are integrated and displayed",
+        "All Kong Swap tools are accessible and functional in the trading interface"
       ],
       "file_operations": [
         {
-          "path": "frontend/src/components/TradingPanel.tsx",
+          "path": "frontend/src/hooks/useKongSwapMetrics.ts",
+          "operation": "create",
+          "description": "Create a new hook that fetches comprehensive trading metrics from Kong Swap API including trading volume data, liquidity pool metrics, order book depth information, and any available technical indicators (moving averages, RSI, MACD, Bollinger Bands, etc.). Structure the hook to return separate data fields for each metric type with loading and error states. Implement proper error handling, retry logic, and fallback mechanisms consistent with the existing useICPPriceData hook. Support real-time or periodic data refresh to keep metrics current. Include TypeScript types for all Kong Swap metric responses."
+        },
+        {
+          "path": "frontend/src/components/TradingMetrics.tsx",
+          "operation": "create",
+          "description": "Create a comprehensive trading metrics display component that consumes data from useKongSwapMetrics hook. Display trading volume indicators with visual charts or bars showing volume over time. Show liquidity metrics including pool depth, TVL, and liquidity ratios. Render order book depth visualization if available from Kong Swap API. Display technical indicators (moving averages, RSI, MACD, etc.) with appropriate visual representations (line overlays, oscillator charts, signal indicators). Organize metrics into logical sections or tabs for easy navigation. Use consistent styling with existing components and ensure responsive design for all screen sizes."
+        },
+        {
+          "path": "frontend/src/components/PriceChart.tsx",
           "operation": "modify",
-          "description": "Add a MAX button in the buy tab positioned near the input field. On click, handle two scenarios based on the current input mode: (1) in USD mode, set the input to the user's full cashBalance from portfolio data; (2) in ICP mode, calculate the maximum ICP purchasable by dividing cashBalance by currentPrice from useICPPriceData, then set that value in the input. The button should be disabled when cashBalance is zero or undefined. Ensure proper number formatting and rounding for calculated values."
+          "description": "Integrate the TradingMetrics component into the price chart view. Add a toggle or tab system to allow users to show/hide the trading metrics panel alongside the line chart. If trading volume should overlay on the chart, add a volume bar chart below the price line chart sharing the same time axis. Ensure the metrics panel or overlay does not interfere with existing margin statistics, liquidation price lines, or chart interactivity. Wire up the metrics display to update alongside the price chart when timeframe changes."
+        },
+        {
+          "path": "frontend/src/App.tsx",
+          "operation": "modify",
+          "description": "Ensure the TradingMetrics component or Kong Swap tools are accessible from the main trading interface. If necessary, add navigation or layout adjustments to accommodate the new metrics panel. Verify that all Kong Swap trading tools are visible and functional within the existing tabbed navigation structure (Trade/Positions/Portfolio/Leaderboard). Ensure proper initialization and data flow for the new Kong Swap metrics throughout the application lifecycle."
         }
       ]
     }

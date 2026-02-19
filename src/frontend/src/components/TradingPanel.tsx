@@ -4,18 +4,33 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { useTradingActions } from '@/hooks/useTradingActions';
+import { useLeverageActions } from '@/hooks/useLeverageActions';
 import { Loader2, ArrowLeftRight } from 'lucide-react';
 import { usePortfolio } from '@/hooks/usePortfolio';
 
 type InputMode = 'icp' | 'dollar';
+type PositionType = 'long' | 'short';
+
+const LEVERAGE_OPTIONS = [
+  { value: 2, label: '2x' },
+  { value: 3, label: '3x' },
+  { value: 5, label: '5x' },
+  { value: 10, label: '10x' },
+  { value: 20, label: '20x' },
+];
 
 export default function TradingPanel() {
   const [buyAmount, setBuyAmount] = useState('');
   const [sellAmount, setSellAmount] = useState('');
+  const [leverageAmount, setLeverageAmount] = useState('');
+  const [positionType, setPositionType] = useState<PositionType>('long');
+  const [selectedLeverage, setSelectedLeverage] = useState<number>(2);
   const [buyInputMode, setBuyInputMode] = useState<InputMode>('icp');
   const [sellInputMode, setSellInputMode] = useState<InputMode>('icp');
   const { currentPrice, isLoadingPrice, buyICP, sellICP, isBuying, isSelling } = useTradingActions();
+  const { openLong, openShort, isOpeningLong, isOpeningShort } = useLeverageActions();
   const { portfolio } = usePortfolio();
 
   const handleBuy = async () => {
@@ -54,6 +69,22 @@ export default function TradingPanel() {
     }
   };
 
+  const handleOpenPosition = async () => {
+    const icpAmount = parseFloat(leverageAmount);
+    if (isNaN(icpAmount) || icpAmount <= 0 || currentPrice <= 0) return;
+
+    try {
+      if (positionType === 'long') {
+        await openLong(icpAmount, currentPrice, selectedLeverage);
+      } else {
+        await openShort(icpAmount, currentPrice, selectedLeverage);
+      }
+      setLeverageAmount('');
+    } catch (error) {
+      // Error is handled by the mutation
+    }
+  };
+
   const toggleBuyInputMode = () => {
     setBuyInputMode(prev => prev === 'icp' ? 'dollar' : 'icp');
     setBuyAmount('');
@@ -68,10 +99,8 @@ export default function TradingPanel() {
     if (!portfolio || portfolio.cashBalance <= 0 || currentPrice <= 0) return;
     
     if (buyInputMode === 'dollar') {
-      // In dollar mode, set to full cash balance
       setBuyAmount(portfolio.cashBalance.toFixed(2));
     } else {
-      // In ICP mode, calculate max ICP purchasable
       const maxICP = portfolio.cashBalance / currentPrice;
       setBuyAmount(maxICP.toFixed(4));
     }
@@ -81,11 +110,9 @@ export default function TradingPanel() {
     if (!portfolio || portfolio.icpBalance <= 0 || currentPrice <= 0) return;
     
     if (sellInputMode === 'dollar') {
-      // In dollar mode, calculate dollar value of all ICP
       const dollarValue = portfolio.icpBalance * currentPrice;
       setSellAmount(dollarValue.toFixed(2));
     } else {
-      // In ICP mode, set to full ICP balance
       setSellAmount(portfolio.icpBalance.toFixed(4));
     }
   };
@@ -116,11 +143,18 @@ export default function TradingPanel() {
     sellProceeds = sellICPAmount * currentPrice;
   }
 
+  // Calculate leverage values
+  const leverageICPAmount = parseFloat(leverageAmount) || 0;
+  const positionSize = leverageICPAmount * currentPrice * selectedLeverage;
+  const marginRequired = positionSize / selectedLeverage;
+
   // Validation
   const canBuy = buyAmount && buyICPAmount > 0 && !isBuying && !isLoadingPrice && 
                  (!portfolio || buyCost <= portfolio.cashBalance);
   const canSell = sellAmount && sellICPAmount > 0 && !isSelling && !isLoadingPrice &&
                   (!portfolio || sellICPAmount <= portfolio.icpBalance);
+  const canOpenPosition = leverageAmount && leverageICPAmount > 0 && !isOpeningLong && !isOpeningShort && !isLoadingPrice &&
+                          (!portfolio || marginRequired <= portfolio.cashBalance);
 
   const canBuyMax = portfolio && portfolio.cashBalance > 0 && currentPrice > 0 && !isBuying;
   const canSellMax = portfolio && portfolio.icpBalance > 0 && currentPrice > 0 && !isSelling;
@@ -137,9 +171,10 @@ export default function TradingPanel() {
       </CardHeader>
       <CardContent>
         <Tabs defaultValue="buy">
-          <TabsList className="grid w-full grid-cols-2">
+          <TabsList className="grid w-full grid-cols-3">
             <TabsTrigger value="buy">Buy</TabsTrigger>
             <TabsTrigger value="sell">Sell</TabsTrigger>
+            <TabsTrigger value="leverage">Leverage</TabsTrigger>
           </TabsList>
 
           <TabsContent value="buy" className="space-y-4">
@@ -297,6 +332,103 @@ export default function TradingPanel() {
               {isSelling && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
               Sell ICP
             </Button>
+          </TabsContent>
+
+          <TabsContent value="leverage" className="space-y-4">
+            {portfolio && (
+              <div className="rounded-lg bg-muted/50 p-3 text-sm">
+                <p className="text-muted-foreground">
+                  Available Cash: <span className="font-semibold text-foreground">${portfolio.cashBalance.toFixed(2)}</span>
+                </p>
+              </div>
+            )}
+            
+            <div className="space-y-4">
+              <div className="space-y-2">
+                <Label>Position Type</Label>
+                <RadioGroup value={positionType} onValueChange={(value) => setPositionType(value as PositionType)}>
+                  <div className="flex items-center space-x-2">
+                    <RadioGroupItem value="long" id="long" />
+                    <Label htmlFor="long" className="font-normal cursor-pointer">
+                      Long (Profit when price goes up)
+                    </Label>
+                  </div>
+                  <div className="flex items-center space-x-2">
+                    <RadioGroupItem value="short" id="short" />
+                    <Label htmlFor="short" className="font-normal cursor-pointer">
+                      Short (Profit when price goes down)
+                    </Label>
+                  </div>
+                </RadioGroup>
+              </div>
+
+              <div className="space-y-2">
+                <Label>Leverage</Label>
+                <RadioGroup 
+                  value={selectedLeverage.toString()} 
+                  onValueChange={(value) => setSelectedLeverage(parseInt(value))}
+                >
+                  <div className="grid grid-cols-5 gap-2">
+                    {LEVERAGE_OPTIONS.map((option) => (
+                      <div key={option.value} className="flex items-center">
+                        <RadioGroupItem 
+                          value={option.value.toString()} 
+                          id={`leverage-${option.value}`}
+                          className="sr-only peer"
+                        />
+                        <Label 
+                          htmlFor={`leverage-${option.value}`}
+                          className="flex items-center justify-center w-full px-3 py-2 text-sm font-medium border rounded-md cursor-pointer peer-data-[state=checked]:bg-primary peer-data-[state=checked]:text-primary-foreground peer-data-[state=checked]:border-primary hover:bg-accent transition-colors"
+                        >
+                          {option.label}
+                        </Label>
+                      </div>
+                    ))}
+                  </div>
+                </RadioGroup>
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="leverage-amount">ICP Amount</Label>
+                <Input
+                  id="leverage-amount"
+                  type="number"
+                  placeholder="0.00"
+                  value={leverageAmount}
+                  onChange={(e) => setLeverageAmount(e.target.value)}
+                  min="0"
+                  step="0.01"
+                />
+                {leverageAmount && parseFloat(leverageAmount) > 0 && (
+                  <div className="space-y-1 text-sm text-muted-foreground">
+                    <p>
+                      Position Size: <span className="font-semibold text-foreground">${positionSize.toFixed(2)}</span>
+                    </p>
+                    <p>
+                      Margin Required ({(100 / selectedLeverage).toFixed(1)}%): <span className="font-semibold text-foreground">${marginRequired.toFixed(2)}</span>
+                    </p>
+                    <p>
+                      Leverage: <span className="font-semibold text-foreground">{selectedLeverage}x</span>
+                    </p>
+                    {portfolio && marginRequired > portfolio.cashBalance && (
+                      <p className="text-red-500 text-xs">
+                        Insufficient funds for margin (Available: ${portfolio.cashBalance.toFixed(2)})
+                      </p>
+                    )}
+                  </div>
+                )}
+              </div>
+
+              <Button
+                onClick={handleOpenPosition}
+                disabled={!canOpenPosition}
+                className="w-full"
+                variant={positionType === 'long' ? 'default' : 'secondary'}
+              >
+                {(isOpeningLong || isOpeningShort) && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                Open {positionType === 'long' ? 'Long' : 'Short'} Position ({selectedLeverage}x)
+              </Button>
+            </div>
           </TabsContent>
         </Tabs>
       </CardContent>
