@@ -1,82 +1,43 @@
 import Array "mo:core/Array";
 import Float "mo:core/Float";
+import Iter "mo:core/Iter";
+import List "mo:core/List";
 import Map "mo:core/Map";
+import Nat "mo:core/Nat";
+import Principal "mo:core/Principal";
+import Runtime "mo:core/Runtime";
 import Text "mo:core/Text";
 import Time "mo:core/Time";
-import Iter "mo:core/Iter";
-import Runtime "mo:core/Runtime";
-import Order "mo:core/Order";
-import Principal "mo:core/Principal";
-import List "mo:core/List";
-
-import AccessControl "authorization/access-control";
 import OutCall "http-outcalls/outcall";
+import AccessControl "authorization/access-control";
 import MixinAuthorization "authorization/MixinAuthorization";
+import Migration "migration";
 
-
+(with migration = Migration.run)
 actor {
-  public type GameMode = {
-    #daily;
-    #weekly;
-    #monthly;
-    #yearly;
-  };
+  type TransactionType = { #buy; #sell };
+  type UserProfile = { name : Text };
 
-  module GameMode {
-    public func toText(gameMode : GameMode) : Text {
-      switch (gameMode) {
-        case (#daily) { "daily" };
-        case (#weekly) { "weekly" };
-        case (#monthly) { "monthly" };
-        case (#yearly) { "yearly" };
-      };
-    };
-
-    public func fromText(text : Text) : GameMode {
-      switch (text) {
-        case ("daily") { #daily };
-        case ("weekly") { #weekly };
-        case ("monthly") { #monthly };
-        case ("yearly") { #yearly };
-        case (_) { #daily };
-      };
-    };
-  };
-
-  public type Winner = {
-    winner : Principal;
-    finalPortfolioValue : Float;
-    profitLoss : Float;
+  type LedgerTransaction = {
     timestamp : Time.Time;
+    transactionType : TransactionType;
+    icpAmount : Float;
+    price : Float;
+    cashBalanceAfter : Float;
+    icpBalanceAfter : Float;
   };
 
-  public type Account = {
+  type Account = {
+    principalId : Principal;
     cashBalance : Float;
     icpBalance : Float;
+    totalPortfolioValue : Float;
     pnl : Float;
     lastUpdated : Time.Time;
   };
 
-  module Account {
-    public func toPrincipal(account : Account, principal : Principal) : (Principal, Account) {
-      (principal, account);
-    };
-    public func compare(a : Account, b : Account) : Order.Order {
-      Float.compare(b.pnl, a.pnl);
-    };
-  };
-
-  public type UserProfile = {
-    name : Text;
-  };
-
-  public type PositionType = {
-    #long;
-    #short;
-  };
-
-  public type LeveragedPosition = {
-    positionType : PositionType;
+  type LeveragedPosition = {
+    positionType : { #long; #short };
     leverage : Float;
     entryPrice : Float;
     amountICP : Float;
@@ -86,166 +47,102 @@ actor {
     liquidationPrice : Float;
   };
 
-  public type GameModeState = {
+  type GameModeData = {
     accounts : Map.Map<Principal, Account>;
-    winners : List.List<Winner>;
+    winners : List.List<{
+      winner : Principal;
+      finalPortfolioValue : Float;
+      profitLoss : Float;
+      timestamp : Time.Time;
+    }>;
     leveragedPositions : Map.Map<Principal, List.List<LeveragedPosition>>;
     openPositions : Map.Map<Principal, List.List<LeveragedPosition>>;
+    transactionLedger : Map.Map<Principal, List.List<LedgerTransaction>>;
   };
 
-  var userProfiles = Map.empty<Principal, UserProfile>();
-  var gameModes = Map.empty<Text, GameModeState>();
+  let userProfiles = Map.empty<Principal, UserProfile>();
+  let gameModes = Map.empty<Text, GameModeData>();
 
   let accessControlState = AccessControl.initState();
   include MixinAuthorization(accessControlState);
 
-  public query func transform(input : OutCall.TransformationInput) : async OutCall.TransformationOutput {
-    OutCall.transform(input);
+  func hasUserProfile(principal : Principal) : Bool {
+    switch (userProfiles.get(principal)) {
+      case (null) { false };
+      case (?_) { true };
+    };
   };
 
-  public shared func getICPPrice() : async Float {
-    let url = "https://api.kongswap.exchange/api/price/icp";
-    let _ = await OutCall.httpGetRequest(url, [], transform);
-    0.0;
-  };
+  public shared ({ caller }) func registerUser(displayName : Text) : async () {
+    // Anonymous principals (guests) cannot register
+    if (caller.isAnonymous()) {
+      Runtime.trap("Unauthorized: Anonymous users cannot register");
+    };
 
-  public shared ({ caller }) func createAccount(gameMode : GameMode) : async () {
-    if (not (AccessControl.hasPermission(accessControlState, caller, #user))) {
-      Runtime.trap("Unauthorized: Only users can create accounts");
+    // Check if user is already registered
+    if (hasUserProfile(caller)) {
+      Runtime.trap("User already exists.");
     };
-    let gameModeKey = GameMode.toText(gameMode);
-    let currentGameMode = switch (gameModes.get(gameModeKey)) {
-      case (null) { Runtime.trap("Game mode not found") };
-      case (?mode) { mode };
-    };
-    if (currentGameMode.accounts.containsKey(caller)) {
-      Runtime.trap("Account already exists");
-    };
-    let newAccount : Account = {
-      cashBalance = 10_000.0;
+
+    let defaultCashBalance : Float = 10_000.0;
+
+    let newAccount = {
+      principalId = caller;
+      cashBalance = defaultCashBalance;
       icpBalance = 0.0;
+      totalPortfolioValue = defaultCashBalance;
       pnl = 0.0;
       lastUpdated = Time.now();
     };
-    currentGameMode.accounts.add(caller, newAccount);
-    gameModes.add(gameModeKey, currentGameMode);
+
+    let userProfile = {
+      name = displayName;
+    };
+
+    let gameModeData = getOrCreateDefaultGameMode();
+    gameModeData.accounts.add(caller, newAccount);
+
+    userProfiles.add(caller, userProfile);
+
+    // Assign user role to the newly registered user
+    AccessControl.assignRole(accessControlState, caller, caller, #user);
   };
 
-  public query ({ caller }) func getAccount(gameMode : GameMode, user : Principal) : async ?Account {
-    if (caller != user and not AccessControl.isAdmin(accessControlState, caller)) {
-      Runtime.trap("Unauthorized: Can only view your own account");
+  public shared ({ caller }) func initializeDefaultGameMode() : async () {
+    if (not AccessControl.isAdmin(accessControlState, caller)) {
+      Runtime.trap("Unauthorized: Only admins can initialize game modes");
     };
-    let gameModeKey = GameMode.toText(gameMode);
-    let currentGameMode = switch (gameModes.get(gameModeKey)) {
-      case (null) { Runtime.trap("Game mode not found") };
-      case (?mode) { mode };
-    };
-    currentGameMode.accounts.get(user);
+
+    let defaultGameMode = initDefaultGameModeData();
+    gameModes.add("default", defaultGameMode);
   };
 
-  public shared ({ caller }) func buyICP(gameMode : GameMode, amount : Float, price : Float) : async () {
-    if (not (AccessControl.hasPermission(accessControlState, caller, #user))) {
-      Runtime.trap("Unauthorized: Only users can buy ICP");
-    };
-    let gameModeKey = GameMode.toText(gameMode);
-    let currentGameMode = switch (gameModes.get(gameModeKey)) {
-      case (null) { Runtime.trap("Game mode not found") };
-      case (?mode) { mode };
-    };
-    let account = switch (currentGameMode.accounts.get(caller)) {
-      case (null) { Runtime.trap("Account not found") };
-      case (?acc) { acc };
-    };
-    let cost = amount * price;
-    if (cost > account.cashBalance) { Runtime.trap("Insufficient funds") };
-
-    let updatedAccount : Account = {
-      cashBalance = account.cashBalance - cost;
-      icpBalance = account.icpBalance + amount;
-      pnl = account.pnl;
-      lastUpdated = Time.now();
-    };
-    currentGameMode.accounts.add(caller, updatedAccount);
-    gameModes.add(gameModeKey, currentGameMode);
-  };
-
-  public shared ({ caller }) func sellICP(gameMode : GameMode, amount : Float, price : Float) : async () {
-    if (not (AccessControl.hasPermission(accessControlState, caller, #user))) {
-      Runtime.trap("Unauthorized: Only users can sell ICP");
-    };
-    let gameModeKey = GameMode.toText(gameMode);
-    let currentGameMode = switch (gameModes.get(gameModeKey)) {
-      case (null) { Runtime.trap("Game mode not found") };
-      case (?mode) { mode };
-    };
-    let account = switch (currentGameMode.accounts.get(caller)) {
-      case (null) { Runtime.trap("Account not found") };
-      case (?acc) { acc };
-    };
-    if (amount > account.icpBalance) { Runtime.trap("Insufficient ICP balance") };
-    let proceeds = amount * price;
-    let updatedAccount : Account = {
-      cashBalance = account.cashBalance + proceeds;
-      icpBalance = account.icpBalance - amount;
-      pnl = account.pnl;
-      lastUpdated = Time.now();
-    };
-    currentGameMode.accounts.add(caller, updatedAccount);
-    gameModes.add(gameModeKey, currentGameMode);
-  };
-
-  public query ({ caller }) func getLeaderboard(gameMode : GameMode) : async [(Principal, Account)] {
-    let currentGameMode = switch (gameModes.get(GameMode.toText(gameMode))) {
-      case (null) { Runtime.trap("Game mode not found") };
-      case (?mode) { mode };
-    };
-    let entries = currentGameMode.accounts.toArray();
-    entries.sort(
-      func(a, b) {
-        Account.compare(a.1, b.1);
-      }
-    );
-  };
-
-  public shared ({ caller }) func resetAccount(gameMode : GameMode) : async () {
-    if (not (AccessControl.hasPermission(accessControlState, caller, #admin))) {
-      Runtime.trap("Unauthorized: Only admins can reset accounts");
-    };
-    let currentGameMode = switch (gameModes.get(GameMode.toText(gameMode))) {
-      case (null) { Runtime.trap("Game mode not found") };
-      case (?mode) { mode };
-    };
-    let updatedAccount : Account = {
-      cashBalance = 10_000.0;
+  func initDefaultGameModeData() : GameModeData {
+    let initialCashBalance : Float = 10_000.0;
+    let adminPrincipal = Principal.fromText("2vxsx-fae");
+    let adminAccount = {
+      principalId = adminPrincipal;
+      cashBalance = initialCashBalance;
       icpBalance = 0.0;
+      totalPortfolioValue = initialCashBalance;
       pnl = 0.0;
       lastUpdated = Time.now();
     };
-    currentGameMode.accounts.add(caller, updatedAccount);
-  };
 
-  public shared ({ caller }) func markWinner(gameMode : GameMode, winner : Winner) : async () {
-    if (not (AccessControl.hasPermission(accessControlState, caller, #admin))) {
-      Runtime.trap("Unauthorized: Only admins can mark winners");
-    };
-    let gameModeKey = GameMode.toText(gameMode);
-    let currentGameMode = switch (gameModes.get(gameModeKey)) {
-      case (null) { Runtime.trap("Game mode not found") };
-      case (?mode) { mode };
-    };
-    currentGameMode.winners.add(winner);
-  };
+    let adminMap = Map.fromIter<Principal, Account>([(adminPrincipal, adminAccount)].values());
 
-  public query ({ caller }) func getWinners(gameMode : GameMode) : async [Winner] {
-    switch (gameModes.get(GameMode.toText(gameMode))) {
-      case (null) { [] };
-      case (?mode) { mode.winners.toArray() };
+    {
+      accounts = adminMap;
+      winners = List.empty();
+      leveragedPositions = Map.empty<Principal, List.List<LeveragedPosition>>();
+      openPositions = Map.empty<Principal, List.List<LeveragedPosition>>();
+      transactionLedger = Map.empty<Principal, List.List<LedgerTransaction>>();
     };
   };
 
   public query ({ caller }) func getCallerUserProfile() : async ?UserProfile {
     if (not (AccessControl.hasPermission(accessControlState, caller, #user))) {
-      Runtime.trap("Unauthorized: Only users can access profiles");
+      Runtime.trap("Unauthorized: Only users can view profiles");
     };
     userProfiles.get(caller);
   };
@@ -264,176 +161,185 @@ actor {
     userProfiles.add(caller, profile);
   };
 
-  public shared ({ caller }) func openLongPosition(gameMode : GameMode, amountICP : Float, price : Float, leverage : Float) : async () {
+  public shared ({ caller }) func getOrCreateAccount() : async Account {
     if (not (AccessControl.hasPermission(accessControlState, caller, #user))) {
-      Runtime.trap("Unauthorized: Only users can open positions");
-    };
-    validateLeverage(leverage);
-    openPosition(caller, gameMode, amountICP, price, leverage, #long);
-  };
-
-  public shared ({ caller }) func openShortPosition(gameMode : GameMode, amountICP : Float, price : Float, leverage : Float) : async () {
-    if (not (AccessControl.hasPermission(accessControlState, caller, #user))) {
-      Runtime.trap("Unauthorized: Only users can open positions");
-    };
-    validateLeverage(leverage);
-    openPosition(caller, gameMode, amountICP, price, leverage, #short);
-  };
-
-  func openPosition(caller : Principal, gameMode : GameMode, amountICP : Float, price : Float, leverage : Float, positionType : PositionType) {
-    let gameModeKey = GameMode.toText(gameMode);
-    let currentGameMode = switch (gameModes.get(gameModeKey)) {
-      case (null) { Runtime.trap("Game mode not found") };
-      case (?mode) { mode };
+      Runtime.trap("Unauthorized: Only users can access accounts");
     };
 
-    let account = switch (currentGameMode.accounts.get(caller)) {
-      case (null) { Runtime.trap("Account not found") };
-      case (?acc) { acc };
-    };
+    let defaultGameModeData = getOrCreateDefaultGameMode();
+    let existingAccount = defaultGameModeData.accounts.get(caller);
 
-    let positionSize = amountICP * price * leverage;
-    let margin = positionSize / leverage;
-
-    if (margin > account.cashBalance) { Runtime.trap("Insufficient funds for margin") };
-
-    let liquidationPrice = calculateLiquidationPrice(positionType, price, leverage);
-
-    let newPosition : LeveragedPosition = {
-      positionType;
-      leverage;
-      entryPrice = price;
-      amountICP;
-      margin;
-      openedAt = Time.now();
-      isOpen = true;
-      liquidationPrice;
-    };
-
-    let userPositions = switch (currentGameMode.leveragedPositions.get(caller)) {
+    switch (existingAccount) {
+      case (?account) { account };
       case (null) {
-        List.fromArray<LeveragedPosition>([newPosition]);
+        let newAccount = {
+          principalId = caller;
+          cashBalance = 10_000.0;
+          icpBalance = 0.0;
+          totalPortfolioValue = 10_000.0;
+          pnl = 0.0;
+          lastUpdated = Time.now();
+        };
+
+        defaultGameModeData.accounts.add(caller, newAccount);
+        newAccount;
       };
-      case (?positions) {
-        positions.add(newPosition);
-        positions;
-      };
-    };
-
-    currentGameMode.leveragedPositions.add(caller, userPositions);
-
-    let updatedAccount : Account = {
-      cashBalance = account.cashBalance - margin;
-      icpBalance = account.icpBalance;
-      pnl = account.pnl;
-      lastUpdated = Time.now();
-    };
-    currentGameMode.accounts.add(caller, updatedAccount);
-    gameModes.add(gameModeKey, currentGameMode);
-  };
-
-  func validateLeverage(leverage : Float) {
-    switch (leverage) {
-      case (3.0) {};
-      case (5.0) {};
-      case (10.0) {};
-      case (20.0) {};
-      case (_) { Runtime.trap("Invalid leverage, supported: 3x, 5x, 10x, 20x") };
     };
   };
 
-  func calculateLiquidationPrice(positionType : PositionType, entryPrice : Float, leverage : Float) : Float {
-    let marginThreshold = 0.9;
-    switch (positionType) {
-      case (#long) { entryPrice * (1.0 - marginThreshold / leverage) };
-      case (#short) { entryPrice * (1.0 + marginThreshold / leverage) };
-    };
+  public query func transform(input : OutCall.TransformationInput) : async OutCall.TransformationOutput {
+    OutCall.transform(input);
   };
 
-  public shared ({ caller }) func closePosition(gameMode : GameMode, positionIndex : Nat, currentPrice : Float) : async () {
+  public shared ({ caller }) func getICPPrice() : async Float {
     if (not (AccessControl.hasPermission(accessControlState, caller, #user))) {
-      Runtime.trap("Unauthorized: Only users can close positions");
+      Runtime.trap("Unauthorized: Only users can fetch ICP price");
     };
-    let gameModeKey = GameMode.toText(gameMode);
-    let currentGameMode = switch (gameModes.get(gameModeKey)) {
-      case (null) { Runtime.trap("Game mode not found") };
-      case (?mode) { mode };
+
+    let url = "https://api.kongswap.exchange/api/price/icp";
+    let _responseBlob = await OutCall.httpGetRequest(url, [], transform);
+    0.0;
+  };
+
+  public shared ({ caller }) func getBalance() : async (Text, Float, Float) {
+    if (not (AccessControl.hasPermission(accessControlState, caller, #user))) {
+      Runtime.trap("Unauthorized: Only users can view balances");
     };
-    let account = switch (currentGameMode.accounts.get(caller)) {
+
+    let account = await getOrCreateAccount();
+    ("default", account.cashBalance, account.icpBalance);
+  };
+
+  public shared ({ caller }) func buyICP(amount : Float) : async () {
+    if (not (AccessControl.hasPermission(accessControlState, caller, #user))) {
+      Runtime.trap("Unauthorized: Only users can buy ICP");
+    };
+
+    var icpPrice : Float = 100.0;
+    let account = await getOrCreateAccount();
+
+    if (account.cashBalance < amount) {
+      Runtime.trap("Insufficient cash balance for purchase");
+    };
+
+    let remainingCash = account.cashBalance - amount;
+    let gainedIcp = amount / icpPrice;
+
+    let updatedAccount = {
+      account with
+      cashBalance = remainingCash;
+      icpBalance = account.icpBalance + gainedIcp;
+      totalPortfolioValue = remainingCash + (account.icpBalance + gainedIcp) * icpPrice;
+    };
+
+    let transaction : LedgerTransaction = {
+      timestamp = Time.now();
+      transactionType = #buy;
+      icpAmount = amount;
+      price = icpPrice;
+      cashBalanceAfter = remainingCash;
+      icpBalanceAfter = updatedAccount.icpBalance;
+    };
+
+    let defaultGameModeData = getOrCreateDefaultGameMode();
+
+    let transactionsList = switch (defaultGameModeData.transactionLedger.get(caller)) {
+      case (null) { List.empty<LedgerTransaction>() };
+      case (?transactions) { transactions };
+    };
+
+    transactionsList.add(transaction);
+    defaultGameModeData.transactionLedger.add(caller, transactionsList);
+    defaultGameModeData.accounts.add(caller, updatedAccount);
+  };
+
+  public shared ({ caller }) func sellICP(amount : Float) : async () {
+    if (not (AccessControl.hasPermission(accessControlState, caller, #user))) {
+      Runtime.trap("Unauthorized: Only users can sell ICP");
+    };
+
+    var icpPrice : Float = 100.0;
+    let account = await getOrCreateAccount();
+
+    if (account.icpBalance < amount) {
+      Runtime.trap("Insufficient ICP balance for sale");
+    };
+
+    let updatedAccount = {
+      account with
+      cashBalance = account.cashBalance + amount * icpPrice;
+      icpBalance = account.icpBalance - amount;
+      totalPortfolioValue = account.cashBalance + amount * icpPrice + (account.icpBalance - amount) * icpPrice;
+    };
+
+    let transaction : LedgerTransaction = {
+      timestamp = Time.now();
+      transactionType = #sell;
+      icpAmount = amount;
+      price = icpPrice;
+      cashBalanceAfter = updatedAccount.cashBalance;
+      icpBalanceAfter = updatedAccount.icpBalance;
+    };
+
+    let defaultGameModeData = getOrCreateDefaultGameMode();
+
+    let transactionsList = switch (defaultGameModeData.transactionLedger.get(caller)) {
+      case (null) { List.empty<LedgerTransaction>() };
+      case (?transactions) { transactions };
+    };
+
+    transactionsList.add(transaction);
+    defaultGameModeData.transactionLedger.add(caller, transactionsList);
+    defaultGameModeData.accounts.add(caller, updatedAccount);
+  };
+
+  public query ({ caller }) func getTransactionHistory() : async [LedgerTransaction] {
+    if (not (AccessControl.hasPermission(accessControlState, caller, #user))) {
+      Runtime.trap("Unauthorized: Only users can view transaction history");
+    };
+
+    let defaultGameModeData = getOrCreateDefaultGameMode();
+    let transactions = switch (defaultGameModeData.transactionLedger.get(caller)) {
+      case (null) { return [] };
+      case (?transactions) { transactions };
+    };
+    transactions.values().toArray();
+  };
+
+  func getOrCreateDefaultGameMode() : GameModeData {
+    switch (gameModes.get("default")) {
+      case (null) {
+        let defaultGameMode = initDefaultGameModeData();
+        gameModes.add("default", defaultGameMode);
+        defaultGameMode;
+      };
+      case (?data) { data };
+    };
+  };
+
+  public query ({ caller }) func getBalanceForUser(user : Principal) : async (Text, Float, Float) {
+    if (not (AccessControl.isAdmin(accessControlState, caller))) {
+      Runtime.trap("Unauthorized: Only admins can view other users' balances");
+    };
+
+    let defaultGameModeData = getOrCreateDefaultGameMode();
+    let account = switch (defaultGameModeData.accounts.get(user)) {
       case (null) { Runtime.trap("Account not found") };
-      case (?acc) { acc };
+      case (?account) { account };
     };
-
-    let userPositions = switch (currentGameMode.leveragedPositions.get(caller)) {
-      case (null) { Runtime.trap("No positions found") };
-      case (?positions) { positions };
-    };
-
-    if (userPositions.size() <= positionIndex) { Runtime.trap("Position not found") };
-
-    let originalPosition = userPositions.at(positionIndex);
-
-    if (not originalPosition.isOpen) {
-      Runtime.trap("Position already closed");
-    };
-
-    let priceDifference = switch (originalPosition.positionType) {
-      case (#long) { currentPrice - originalPosition.entryPrice };
-      case (#short) { originalPosition.entryPrice - currentPrice };
-    };
-
-    let profitLoss = (priceDifference * originalPosition.amountICP * originalPosition.leverage);
-
-    let updatedPositions = userPositions.map<LeveragedPosition, LeveragedPosition>(
-      func(pos) {
-        if (pos == originalPosition) {
-          { pos with isOpen = false };
-        } else { pos };
-      }
-    );
-
-    currentGameMode.leveragedPositions.add(caller, updatedPositions);
-
-    let updatedAccount : Account = {
-      cashBalance = account.cashBalance + originalPosition.margin + profitLoss;
-      icpBalance = account.icpBalance;
-      pnl = account.pnl + profitLoss;
-      lastUpdated = Time.now();
-    };
-    currentGameMode.accounts.add(caller, updatedAccount);
-    gameModes.add(gameModeKey, currentGameMode);
+    ("default", account.cashBalance, account.icpBalance);
   };
 
-  public query ({ caller }) func getOpenPositions(gameMode : GameMode) : async [LeveragedPosition] {
-    if (not (AccessControl.hasPermission(accessControlState, caller, #user))) {
-      Runtime.trap("Unauthorized: Only users can view positions");
-    };
-    let gameModeKey = GameMode.toText(gameMode);
-    let currentGameMode = switch (gameModes.get(gameModeKey)) {
-      case (null) { Runtime.trap("Game mode not found") };
-      case (?mode) { mode };
+  public query ({ caller }) func getTransactionHistoryForUser(user : Principal) : async [LedgerTransaction] {
+    if (not (AccessControl.isAdmin(accessControlState, caller))) {
+      Runtime.trap("Unauthorized: Only admins can view other users' transaction history");
     };
 
-    var allPositions = List.empty<LeveragedPosition>();
-
-    switch (currentGameMode.leveragedPositions.get(caller)) {
-      case (null) {};
-      case (?positions) {
-        for (pos in positions.toArray().values()) {
-          if (pos.isOpen) { allPositions.add(pos) };
-        };
-      };
+    let defaultGameModeData = getOrCreateDefaultGameMode();
+    let transactions = switch (defaultGameModeData.transactionLedger.get(user)) {
+      case (null) { return [] };
+      case (?transactions) { transactions };
     };
-
-    switch (currentGameMode.openPositions.get(caller)) {
-      case (null) {};
-      case (?positions) {
-        for (pos in positions.toArray().values()) {
-          if (pos.isOpen) { allPositions.add(pos) };
-        };
-      };
-    };
-
-    allPositions.toArray();
+    transactions.values().toArray();
   };
 };

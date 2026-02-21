@@ -12,102 +12,76 @@ export interface MACDResult {
   histogram: number;
 }
 
-export interface MAResult {
-  timestamp: number;
-  value: number;
-}
-
 /**
- * Calculate Simple Moving Average (SMA)
- */
-export function calculateSMA(prices: number[], period: number): number[] {
-  if (prices.length < period) return [];
-  
-  const sma: number[] = [];
-  
-  for (let i = period - 1; i < prices.length; i++) {
-    const sum = prices.slice(i - period + 1, i + 1).reduce((a, b) => a + b, 0);
-    sma.push(sum / period);
-  }
-  
-  return sma;
-}
-
-/**
- * Calculate Exponential Moving Average (EMA)
- */
-export function calculateEMA(prices: number[], period: number): number[] {
-  if (prices.length < period) return [];
-  
-  const ema: number[] = [];
-  const multiplier = 2 / (period + 1);
-  
-  // Start with SMA for the first value
-  const sma = prices.slice(0, period).reduce((a, b) => a + b, 0) / period;
-  ema.push(sma);
-  
-  // Calculate EMA for remaining values
-  for (let i = period; i < prices.length; i++) {
-    const value = (prices[i] - ema[ema.length - 1]) * multiplier + ema[ema.length - 1];
-    ema.push(value);
-  }
-  
-  return ema;
-}
-
-/**
- * Calculate Relative Strength Index (RSI)
+ * Calculate RSI (Relative Strength Index)
+ * @param prices Array of price values
+ * @param period RSI period (typically 14)
+ * @returns Array of RSI results
  */
 export function calculateRSI(prices: number[], period: number = 14): RSIResult[] {
-  if (prices.length < period + 1) return [];
-  
-  const rsi: RSIResult[] = [];
-  const changes: number[] = [];
-  
+  if (prices.length < period + 1) {
+    return prices.map((_, index) => ({
+      timestamp: Date.now() - (prices.length - index) * 60000,
+      value: 50,
+    }));
+  }
+
+  const results: RSIResult[] = [];
+  const gains: number[] = [];
+  const losses: number[] = [];
+
   // Calculate price changes
   for (let i = 1; i < prices.length; i++) {
-    changes.push(prices[i] - prices[i - 1]);
+    const change = prices[i] - prices[i - 1];
+    gains.push(change > 0 ? change : 0);
+    losses.push(change < 0 ? Math.abs(change) : 0);
   }
-  
+
   // Calculate initial average gain and loss
-  let avgGain = 0;
-  let avgLoss = 0;
-  
+  let avgGain = gains.slice(0, period).reduce((a, b) => a + b, 0) / period;
+  let avgLoss = losses.slice(0, period).reduce((a, b) => a + b, 0) / period;
+
+  // First RSI value
+  const firstRS = avgLoss === 0 ? 100 : avgGain / avgLoss;
+  const firstRSI = 100 - 100 / (1 + firstRS);
+
+  // Fill initial values with 50 (neutral)
   for (let i = 0; i < period; i++) {
-    if (changes[i] > 0) {
-      avgGain += changes[i];
-    } else {
-      avgLoss += Math.abs(changes[i]);
-    }
-  }
-  
-  avgGain /= period;
-  avgLoss /= period;
-  
-  // Calculate RSI for each point
-  for (let i = period; i < changes.length; i++) {
-    const rs = avgLoss === 0 ? 100 : avgGain / avgLoss;
-    const rsiValue = 100 - (100 / (1 + rs));
-    
-    rsi.push({
-      timestamp: i,
-      value: rsiValue,
+    results.push({
+      timestamp: Date.now() - (prices.length - i) * 60000,
+      value: 50,
     });
-    
-    // Update average gain and loss using smoothing
-    const change = changes[i];
-    const gain = change > 0 ? change : 0;
-    const loss = change < 0 ? Math.abs(change) : 0;
-    
-    avgGain = (avgGain * (period - 1) + gain) / period;
-    avgLoss = (avgLoss * (period - 1) + loss) / period;
   }
-  
-  return rsi;
+
+  results.push({
+    timestamp: Date.now() - (prices.length - period) * 60000,
+    value: firstRSI,
+  });
+
+  // Calculate subsequent RSI values using smoothed averages
+  for (let i = period; i < gains.length; i++) {
+    avgGain = (avgGain * (period - 1) + gains[i]) / period;
+    avgLoss = (avgLoss * (period - 1) + losses[i]) / period;
+
+    const rs = avgLoss === 0 ? 100 : avgGain / avgLoss;
+    const rsi = 100 - 100 / (1 + rs);
+
+    results.push({
+      timestamp: Date.now() - (prices.length - i - 1) * 60000,
+      value: rsi,
+    });
+  }
+
+  return results;
 }
 
 /**
  * Calculate MACD (Moving Average Convergence Divergence)
+ * @param prices Array of price values
+ * @param fastPeriod Fast EMA period (typically 12)
+ * @param slowPeriod Slow EMA period (typically 26)
+ * @param signalPeriod Signal line period (typically 9)
+ * @returns Array of MACD results
  */
 export function calculateMACD(
   prices: number[],
@@ -115,56 +89,80 @@ export function calculateMACD(
   slowPeriod: number = 26,
   signalPeriod: number = 9
 ): MACDResult[] {
-  if (prices.length < slowPeriod + signalPeriod) return [];
-  
-  // Calculate fast and slow EMAs
+  if (prices.length < slowPeriod) {
+    return prices.map((_, index) => ({
+      timestamp: Date.now() - (prices.length - index) * 60000,
+      macdLine: 0,
+      signalLine: 0,
+      histogram: 0,
+    }));
+  }
+
   const fastEMA = calculateEMA(prices, fastPeriod);
   const slowEMA = calculateEMA(prices, slowPeriod);
-  
-  // Calculate MACD line (fast EMA - slow EMA)
-  const macdLine: number[] = [];
-  const startIndex = slowPeriod - fastPeriod;
-  
-  for (let i = 0; i < slowEMA.length; i++) {
-    macdLine.push(fastEMA[i + startIndex] - slowEMA[i]);
-  }
-  
+
+  // Calculate MACD line
+  const macdLine = fastEMA.map((fast, i) => fast - slowEMA[i]);
+
   // Calculate signal line (EMA of MACD line)
   const signalLine = calculateEMA(macdLine, signalPeriod);
-  
-  // Calculate histogram (MACD - Signal)
-  const results: MACDResult[] = [];
-  const histogramStartIndex = signalPeriod - 1;
-  
-  for (let i = 0; i < signalLine.length; i++) {
-    const macdValue = macdLine[i + histogramStartIndex];
-    const signalValue = signalLine[i];
-    
-    results.push({
-      timestamp: i + slowPeriod + signalPeriod - 2,
-      macdLine: macdValue,
-      signalLine: signalValue,
-      histogram: macdValue - signalValue,
-    });
-  }
-  
+
+  // Calculate histogram
+  const results: MACDResult[] = macdLine.map((macd, i) => ({
+    timestamp: Date.now() - (prices.length - i) * 60000,
+    macdLine: macd,
+    signalLine: signalLine[i],
+    histogram: macd - signalLine[i],
+  }));
+
   return results;
 }
 
 /**
- * Calculate Moving Average with timestamps
+ * Calculate SMA (Simple Moving Average)
+ * @param prices Array of price values
+ * @param period Moving average period
+ * @returns Array of SMA values
  */
-export function calculateMAWithTimestamps(
-  data: Array<{ timestamp: number; price: number }>,
-  period: number
-): MAResult[] {
-  if (data.length < period) return [];
-  
-  const prices = data.map(d => d.price);
-  const smaValues = calculateSMA(prices, period);
-  
-  return smaValues.map((value, index) => ({
-    timestamp: data[index + period - 1].timestamp,
-    value,
-  }));
+export function calculateSMA(prices: number[], period: number): number[] {
+  const result: number[] = [];
+
+  for (let i = 0; i < prices.length; i++) {
+    if (i < period - 1) {
+      result.push(NaN);
+    } else {
+      const sum = prices.slice(i - period + 1, i + 1).reduce((a, b) => a + b, 0);
+      result.push(sum / period);
+    }
+  }
+
+  return result;
+}
+
+/**
+ * Calculate EMA (Exponential Moving Average)
+ * @param prices Array of price values
+ * @param period EMA period
+ * @returns Array of EMA values
+ */
+export function calculateEMA(prices: number[], period: number): number[] {
+  if (prices.length === 0) return [];
+
+  const k = 2 / (period + 1);
+  const ema: number[] = [];
+
+  // Start with SMA for the first value
+  const firstSMA = prices.slice(0, period).reduce((a, b) => a + b, 0) / period;
+  ema.push(firstSMA);
+
+  // Calculate EMA for subsequent values
+  for (let i = period; i < prices.length; i++) {
+    const value = prices[i] * k + ema[ema.length - 1] * (1 - k);
+    ema.push(value);
+  }
+
+  // Fill initial values with NaN
+  const result = new Array(period - 1).fill(NaN).concat(ema);
+
+  return result;
 }

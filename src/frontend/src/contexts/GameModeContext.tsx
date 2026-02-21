@@ -1,5 +1,5 @@
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
-import { GameMode } from '../backend';
+import { GameMode } from '../types/game';
 
 interface GameModeContextType {
   gameMode: GameMode;

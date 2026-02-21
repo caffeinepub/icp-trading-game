@@ -1,81 +1,65 @@
 import { useState, useEffect } from 'react';
-import { GameMode } from '../backend';
+import { GameMode } from '../types/game';
 
 interface TimeRemaining {
   days: number;
   hours: number;
   minutes: number;
   seconds: number;
-  totalSeconds: number;
+  total: number;
 }
 
-function getNextResetTime(mode: GameMode): Date {
-  const now = new Date();
-  let nextReset = new Date();
+export function useGameTimer(gameMode: GameMode): TimeRemaining {
+  const [timeRemaining, setTimeRemaining] = useState<TimeRemaining>(() => 
+    calculateTimeRemaining(gameMode)
+  );
 
-  switch (mode) {
+  useEffect(() => {
+    const interval = setInterval(() => {
+      setTimeRemaining(calculateTimeRemaining(gameMode));
+    }, 1000);
+
+    return () => clearInterval(interval);
+  }, [gameMode]);
+
+  return timeRemaining;
+}
+
+function calculateTimeRemaining(gameMode: GameMode): TimeRemaining {
+  const now = new Date();
+  let nextReset: Date;
+
+  switch (gameMode) {
     case GameMode.daily:
-      // Next midnight UTC
+      nextReset = new Date(now);
       nextReset.setUTCHours(24, 0, 0, 0);
       break;
     case GameMode.weekly:
-      // Next Monday at midnight UTC
+      nextReset = new Date(now);
       const daysUntilMonday = (8 - now.getUTCDay()) % 7 || 7;
       nextReset.setUTCDate(now.getUTCDate() + daysUntilMonday);
       nextReset.setUTCHours(0, 0, 0, 0);
       break;
     case GameMode.monthly:
-      // First day of next month at midnight UTC
+      nextReset = new Date(now);
       nextReset.setUTCMonth(now.getUTCMonth() + 1, 1);
       nextReset.setUTCHours(0, 0, 0, 0);
       break;
     case GameMode.yearly:
-      // January 1st of next year at midnight UTC
+      nextReset = new Date(now);
       nextReset.setUTCFullYear(now.getUTCFullYear() + 1, 0, 1);
       nextReset.setUTCHours(0, 0, 0, 0);
       break;
+    default:
+      nextReset = new Date(now);
+      nextReset.setUTCHours(24, 0, 0, 0);
   }
 
-  return nextReset;
-}
+  const total = Math.max(0, nextReset.getTime() - now.getTime());
+  const seconds = Math.floor((total / 1000) % 60);
+  const minutes = Math.floor((total / 1000 / 60) % 60);
+  const hours = Math.floor((total / (1000 * 60 * 60)) % 24);
+  const days = Math.floor(total / (1000 * 60 * 60 * 24));
 
-function calculateTimeRemaining(targetDate: Date): TimeRemaining {
-  const now = new Date();
-  const totalSeconds = Math.max(0, Math.floor((targetDate.getTime() - now.getTime()) / 1000));
-
-  const days = Math.floor(totalSeconds / 86400);
-  const hours = Math.floor((totalSeconds % 86400) / 3600);
-  const minutes = Math.floor((totalSeconds % 3600) / 60);
-  const seconds = totalSeconds % 60;
-
-  return { days, hours, minutes, seconds, totalSeconds };
-}
-
-export function useGameTimer(mode: GameMode): TimeRemaining {
-  const [timeRemaining, setTimeRemaining] = useState<TimeRemaining>(() => {
-    const nextReset = getNextResetTime(mode);
-    return calculateTimeRemaining(nextReset);
-  });
-
-  useEffect(() => {
-    const nextReset = getNextResetTime(mode);
-    
-    const updateTimer = () => {
-      const remaining = calculateTimeRemaining(nextReset);
-      setTimeRemaining(remaining);
-
-      // If timer expired, recalculate next reset
-      if (remaining.totalSeconds === 0) {
-        const newNextReset = getNextResetTime(mode);
-        setTimeRemaining(calculateTimeRemaining(newNextReset));
-      }
-    };
-
-    updateTimer();
-    const interval = setInterval(updateTimer, 1000);
-
-    return () => clearInterval(interval);
-  }, [mode]);
-
-  return timeRemaining;
+  return { days, hours, minutes, seconds, total };
 }

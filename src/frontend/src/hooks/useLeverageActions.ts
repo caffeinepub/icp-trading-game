@@ -1,73 +1,75 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { useActor } from './useActor';
-import { useGameMode } from '@/contexts/GameModeContext';
 import { toast } from 'sonner';
 
 export function useLeverageActions() {
   const { actor } = useActor();
-  const { gameMode } = useGameMode();
   const queryClient = useQueryClient();
 
-  const openLongMutation = useMutation({
-    mutationFn: async ({ amountICP, price, leverage }: { amountICP: number; price: number; leverage: number }) => {
+  const openLongPosition = useMutation({
+    mutationFn: async ({ amountICP, currentPrice, leverage }: { amountICP: number; currentPrice: number; leverage: number }) => {
       if (!actor) throw new Error('Actor not initialized');
-      await actor.openLongPosition(gameMode, amountICP, price, leverage);
+      
+      // Backend doesn't support leverage trading yet
+      toast.error('Leverage trading not yet implemented in backend');
+      throw new Error('Leverage trading not yet implemented');
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['portfolio'] });
       queryClient.invalidateQueries({ queryKey: ['positions'] });
-      queryClient.invalidateQueries({ queryKey: ['account'] });
+      queryClient.invalidateQueries({ queryKey: ['portfolio'] });
+      queryClient.invalidateQueries({ queryKey: ['transactionHistory'] });
       toast.success('Long position opened successfully');
     },
     onError: (error: Error) => {
-      console.error('Error opening long position:', error);
-      toast.error(error.message || 'Failed to open long position');
+      console.error('Failed to open long position:', error);
     },
   });
 
-  const openShortMutation = useMutation({
-    mutationFn: async ({ amountICP, price, leverage }: { amountICP: number; price: number; leverage: number }) => {
+  const openShortPosition = useMutation({
+    mutationFn: async ({ amountICP, currentPrice, leverage }: { amountICP: number; currentPrice: number; leverage: number }) => {
       if (!actor) throw new Error('Actor not initialized');
-      await actor.openShortPosition(gameMode, amountICP, price, leverage);
+      
+      // Backend doesn't support leverage trading yet
+      toast.error('Leverage trading not yet implemented in backend');
+      throw new Error('Leverage trading not yet implemented');
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['portfolio'] });
       queryClient.invalidateQueries({ queryKey: ['positions'] });
-      queryClient.invalidateQueries({ queryKey: ['account'] });
+      queryClient.invalidateQueries({ queryKey: ['portfolio'] });
+      queryClient.invalidateQueries({ queryKey: ['transactionHistory'] });
       toast.success('Short position opened successfully');
     },
     onError: (error: Error) => {
-      console.error('Error opening short position:', error);
-      toast.error(error.message || 'Failed to open short position');
+      console.error('Failed to open short position:', error);
     },
   });
 
-  const closePositionMutation = useMutation({
-    mutationFn: async ({ positionIndex, currentPrice }: { positionIndex: number; currentPrice: number }) => {
+  const closePosition = useMutation({
+    mutationFn: async (positionIndex: number) => {
       if (!actor) throw new Error('Actor not initialized');
-      await actor.closePosition(gameMode, BigInt(positionIndex), currentPrice);
+      
+      // Backend doesn't support leverage trading yet
+      toast.error('Leverage trading not yet implemented in backend');
+      throw new Error('Leverage trading not yet implemented');
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['portfolio'] });
       queryClient.invalidateQueries({ queryKey: ['positions'] });
-      queryClient.invalidateQueries({ queryKey: ['account'] });
+      queryClient.invalidateQueries({ queryKey: ['portfolio'] });
+      queryClient.invalidateQueries({ queryKey: ['transactionHistory'] });
       toast.success('Position closed successfully');
     },
     onError: (error: Error) => {
-      console.error('Error closing position:', error);
-      toast.error(error.message || 'Failed to close position');
+      console.error('Failed to close position:', error);
     },
   });
 
   return {
-    openLong: (amountICP: number, price: number, leverage: number) => 
-      openLongMutation.mutateAsync({ amountICP, price, leverage }),
-    openShort: (amountICP: number, price: number, leverage: number) => 
-      openShortMutation.mutateAsync({ amountICP, price, leverage }),
-    closePosition: (positionIndex: number, currentPrice: number) => 
-      closePositionMutation.mutateAsync({ positionIndex, currentPrice }),
-    isOpeningLong: openLongMutation.isPending,
-    isOpeningShort: openShortMutation.isPending,
-    isClosing: closePositionMutation.isPending,
+    openLongPosition: (amountICP: number, currentPrice: number, leverage: number) => 
+      openLongPosition.mutateAsync({ amountICP, currentPrice, leverage }),
+    openShortPosition: (amountICP: number, currentPrice: number, leverage: number) => 
+      openShortPosition.mutateAsync({ amountICP, currentPrice, leverage }),
+    closePosition: (positionIndex: number) => closePosition.mutateAsync(positionIndex),
+    isOpening: openLongPosition.isPending || openShortPosition.isPending,
+    isClosing: closePosition.isPending,
   };
 }

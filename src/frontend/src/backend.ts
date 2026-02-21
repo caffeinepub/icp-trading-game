@@ -94,21 +94,13 @@ export interface http_request_result {
     body: Uint8Array;
     headers: Array<http_header>;
 }
-export interface LeveragedPosition {
-    leverage: number;
-    isOpen: boolean;
-    positionType: PositionType;
-    liquidationPrice: number;
-    entryPrice: number;
-    margin: number;
-    amountICP: number;
-    openedAt: Time;
-}
 export interface Account {
     pnl: number;
+    totalPortfolioValue: number;
     lastUpdated: Time;
     icpBalance: number;
     cashBalance: number;
+    principalId: Principal;
 }
 export interface TransformationOutput {
     status: bigint;
@@ -116,15 +108,17 @@ export interface TransformationOutput {
     headers: Array<http_header>;
 }
 export type Time = bigint;
-export interface Winner {
-    finalPortfolioValue: number;
-    winner: Principal;
-    profitLoss: number;
-    timestamp: Time;
-}
 export interface TransformationInput {
     context: Uint8Array;
     response: http_request_result;
+}
+export interface LedgerTransaction {
+    transactionType: TransactionType;
+    icpBalanceAfter: number;
+    timestamp: Time;
+    price: number;
+    cashBalanceAfter: number;
+    icpAmount: number;
 }
 export interface UserProfile {
     name: string;
@@ -133,15 +127,9 @@ export interface http_header {
     value: string;
     name: string;
 }
-export enum GameMode {
-    monthly = "monthly",
-    yearly = "yearly",
-    daily = "daily",
-    weekly = "weekly"
-}
-export enum PositionType {
-    long_ = "long",
-    short_ = "short"
+export enum TransactionType {
+    buy = "buy",
+    sell = "sell"
 }
 export enum UserRole {
     admin = "admin",
@@ -151,27 +139,24 @@ export enum UserRole {
 export interface backendInterface {
     _initializeAccessControlWithSecret(userSecret: string): Promise<void>;
     assignCallerUserRole(user: Principal, role: UserRole): Promise<void>;
-    buyICP(gameMode: GameMode, amount: number, price: number): Promise<void>;
-    closePosition(gameMode: GameMode, positionIndex: bigint, currentPrice: number): Promise<void>;
-    createAccount(gameMode: GameMode): Promise<void>;
-    getAccount(gameMode: GameMode, user: Principal): Promise<Account | null>;
+    buyICP(amount: number): Promise<void>;
+    getBalance(): Promise<[string, number, number]>;
+    getBalanceForUser(user: Principal): Promise<[string, number, number]>;
     getCallerUserProfile(): Promise<UserProfile | null>;
     getCallerUserRole(): Promise<UserRole>;
     getICPPrice(): Promise<number>;
-    getLeaderboard(gameMode: GameMode): Promise<Array<[Principal, Account]>>;
-    getOpenPositions(gameMode: GameMode): Promise<Array<LeveragedPosition>>;
+    getOrCreateAccount(): Promise<Account>;
+    getTransactionHistory(): Promise<Array<LedgerTransaction>>;
+    getTransactionHistoryForUser(user: Principal): Promise<Array<LedgerTransaction>>;
     getUserProfile(user: Principal): Promise<UserProfile | null>;
-    getWinners(gameMode: GameMode): Promise<Array<Winner>>;
+    initializeDefaultGameMode(): Promise<void>;
     isCallerAdmin(): Promise<boolean>;
-    markWinner(gameMode: GameMode, winner: Winner): Promise<void>;
-    openLongPosition(gameMode: GameMode, amountICP: number, price: number, leverage: number): Promise<void>;
-    openShortPosition(gameMode: GameMode, amountICP: number, price: number, leverage: number): Promise<void>;
-    resetAccount(gameMode: GameMode): Promise<void>;
+    registerUser(displayName: string): Promise<void>;
     saveCallerUserProfile(profile: UserProfile): Promise<void>;
-    sellICP(gameMode: GameMode, amount: number, price: number): Promise<void>;
+    sellICP(amount: number): Promise<void>;
     transform(input: TransformationInput): Promise<TransformationOutput>;
 }
-import type { Account as _Account, GameMode as _GameMode, LeveragedPosition as _LeveragedPosition, PositionType as _PositionType, Time as _Time, UserProfile as _UserProfile, UserRole as _UserRole } from "./declarations/backend.did.d.ts";
+import type { LedgerTransaction as _LedgerTransaction, Time as _Time, TransactionType as _TransactionType, UserProfile as _UserProfile, UserRole as _UserRole } from "./declarations/backend.did.d.ts";
 export class Backend implements backendInterface {
     constructor(private actor: ActorSubclass<_SERVICE>, private _uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, private _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, private processError?: (error: unknown) => never){}
     async _initializeAccessControlWithSecret(arg0: string): Promise<void> {
@@ -202,88 +187,90 @@ export class Backend implements backendInterface {
             return result;
         }
     }
-    async buyICP(arg0: GameMode, arg1: number, arg2: number): Promise<void> {
+    async buyICP(arg0: number): Promise<void> {
         if (this.processError) {
             try {
-                const result = await this.actor.buyICP(to_candid_GameMode_n3(this._uploadFile, this._downloadFile, arg0), arg1, arg2);
+                const result = await this.actor.buyICP(arg0);
                 return result;
             } catch (e) {
                 this.processError(e);
                 throw new Error("unreachable");
             }
         } else {
-            const result = await this.actor.buyICP(to_candid_GameMode_n3(this._uploadFile, this._downloadFile, arg0), arg1, arg2);
+            const result = await this.actor.buyICP(arg0);
             return result;
         }
     }
-    async closePosition(arg0: GameMode, arg1: bigint, arg2: number): Promise<void> {
+    async getBalance(): Promise<[string, number, number]> {
         if (this.processError) {
             try {
-                const result = await this.actor.closePosition(to_candid_GameMode_n3(this._uploadFile, this._downloadFile, arg0), arg1, arg2);
-                return result;
+                const result = await this.actor.getBalance();
+                return [
+                    result[0],
+                    result[1],
+                    result[2]
+                ];
             } catch (e) {
                 this.processError(e);
                 throw new Error("unreachable");
             }
         } else {
-            const result = await this.actor.closePosition(to_candid_GameMode_n3(this._uploadFile, this._downloadFile, arg0), arg1, arg2);
-            return result;
+            const result = await this.actor.getBalance();
+            return [
+                result[0],
+                result[1],
+                result[2]
+            ];
         }
     }
-    async createAccount(arg0: GameMode): Promise<void> {
+    async getBalanceForUser(arg0: Principal): Promise<[string, number, number]> {
         if (this.processError) {
             try {
-                const result = await this.actor.createAccount(to_candid_GameMode_n3(this._uploadFile, this._downloadFile, arg0));
-                return result;
+                const result = await this.actor.getBalanceForUser(arg0);
+                return [
+                    result[0],
+                    result[1],
+                    result[2]
+                ];
             } catch (e) {
                 this.processError(e);
                 throw new Error("unreachable");
             }
         } else {
-            const result = await this.actor.createAccount(to_candid_GameMode_n3(this._uploadFile, this._downloadFile, arg0));
-            return result;
-        }
-    }
-    async getAccount(arg0: GameMode, arg1: Principal): Promise<Account | null> {
-        if (this.processError) {
-            try {
-                const result = await this.actor.getAccount(to_candid_GameMode_n3(this._uploadFile, this._downloadFile, arg0), arg1);
-                return from_candid_opt_n5(this._uploadFile, this._downloadFile, result);
-            } catch (e) {
-                this.processError(e);
-                throw new Error("unreachable");
-            }
-        } else {
-            const result = await this.actor.getAccount(to_candid_GameMode_n3(this._uploadFile, this._downloadFile, arg0), arg1);
-            return from_candid_opt_n5(this._uploadFile, this._downloadFile, result);
+            const result = await this.actor.getBalanceForUser(arg0);
+            return [
+                result[0],
+                result[1],
+                result[2]
+            ];
         }
     }
     async getCallerUserProfile(): Promise<UserProfile | null> {
         if (this.processError) {
             try {
                 const result = await this.actor.getCallerUserProfile();
-                return from_candid_opt_n6(this._uploadFile, this._downloadFile, result);
+                return from_candid_opt_n3(this._uploadFile, this._downloadFile, result);
             } catch (e) {
                 this.processError(e);
                 throw new Error("unreachable");
             }
         } else {
             const result = await this.actor.getCallerUserProfile();
-            return from_candid_opt_n6(this._uploadFile, this._downloadFile, result);
+            return from_candid_opt_n3(this._uploadFile, this._downloadFile, result);
         }
     }
     async getCallerUserRole(): Promise<UserRole> {
         if (this.processError) {
             try {
                 const result = await this.actor.getCallerUserRole();
-                return from_candid_UserRole_n7(this._uploadFile, this._downloadFile, result);
+                return from_candid_UserRole_n4(this._uploadFile, this._downloadFile, result);
             } catch (e) {
                 this.processError(e);
                 throw new Error("unreachable");
             }
         } else {
             const result = await this.actor.getCallerUserRole();
-            return from_candid_UserRole_n7(this._uploadFile, this._downloadFile, result);
+            return from_candid_UserRole_n4(this._uploadFile, this._downloadFile, result);
         }
     }
     async getICPPrice(): Promise<number> {
@@ -300,59 +287,73 @@ export class Backend implements backendInterface {
             return result;
         }
     }
-    async getLeaderboard(arg0: GameMode): Promise<Array<[Principal, Account]>> {
+    async getOrCreateAccount(): Promise<Account> {
         if (this.processError) {
             try {
-                const result = await this.actor.getLeaderboard(to_candid_GameMode_n3(this._uploadFile, this._downloadFile, arg0));
+                const result = await this.actor.getOrCreateAccount();
                 return result;
             } catch (e) {
                 this.processError(e);
                 throw new Error("unreachable");
             }
         } else {
-            const result = await this.actor.getLeaderboard(to_candid_GameMode_n3(this._uploadFile, this._downloadFile, arg0));
+            const result = await this.actor.getOrCreateAccount();
             return result;
         }
     }
-    async getOpenPositions(arg0: GameMode): Promise<Array<LeveragedPosition>> {
+    async getTransactionHistory(): Promise<Array<LedgerTransaction>> {
         if (this.processError) {
             try {
-                const result = await this.actor.getOpenPositions(to_candid_GameMode_n3(this._uploadFile, this._downloadFile, arg0));
-                return from_candid_vec_n9(this._uploadFile, this._downloadFile, result);
+                const result = await this.actor.getTransactionHistory();
+                return from_candid_vec_n6(this._uploadFile, this._downloadFile, result);
             } catch (e) {
                 this.processError(e);
                 throw new Error("unreachable");
             }
         } else {
-            const result = await this.actor.getOpenPositions(to_candid_GameMode_n3(this._uploadFile, this._downloadFile, arg0));
-            return from_candid_vec_n9(this._uploadFile, this._downloadFile, result);
+            const result = await this.actor.getTransactionHistory();
+            return from_candid_vec_n6(this._uploadFile, this._downloadFile, result);
+        }
+    }
+    async getTransactionHistoryForUser(arg0: Principal): Promise<Array<LedgerTransaction>> {
+        if (this.processError) {
+            try {
+                const result = await this.actor.getTransactionHistoryForUser(arg0);
+                return from_candid_vec_n6(this._uploadFile, this._downloadFile, result);
+            } catch (e) {
+                this.processError(e);
+                throw new Error("unreachable");
+            }
+        } else {
+            const result = await this.actor.getTransactionHistoryForUser(arg0);
+            return from_candid_vec_n6(this._uploadFile, this._downloadFile, result);
         }
     }
     async getUserProfile(arg0: Principal): Promise<UserProfile | null> {
         if (this.processError) {
             try {
                 const result = await this.actor.getUserProfile(arg0);
-                return from_candid_opt_n6(this._uploadFile, this._downloadFile, result);
+                return from_candid_opt_n3(this._uploadFile, this._downloadFile, result);
             } catch (e) {
                 this.processError(e);
                 throw new Error("unreachable");
             }
         } else {
             const result = await this.actor.getUserProfile(arg0);
-            return from_candid_opt_n6(this._uploadFile, this._downloadFile, result);
+            return from_candid_opt_n3(this._uploadFile, this._downloadFile, result);
         }
     }
-    async getWinners(arg0: GameMode): Promise<Array<Winner>> {
+    async initializeDefaultGameMode(): Promise<void> {
         if (this.processError) {
             try {
-                const result = await this.actor.getWinners(to_candid_GameMode_n3(this._uploadFile, this._downloadFile, arg0));
+                const result = await this.actor.initializeDefaultGameMode();
                 return result;
             } catch (e) {
                 this.processError(e);
                 throw new Error("unreachable");
             }
         } else {
-            const result = await this.actor.getWinners(to_candid_GameMode_n3(this._uploadFile, this._downloadFile, arg0));
+            const result = await this.actor.initializeDefaultGameMode();
             return result;
         }
     }
@@ -370,59 +371,17 @@ export class Backend implements backendInterface {
             return result;
         }
     }
-    async markWinner(arg0: GameMode, arg1: Winner): Promise<void> {
+    async registerUser(arg0: string): Promise<void> {
         if (this.processError) {
             try {
-                const result = await this.actor.markWinner(to_candid_GameMode_n3(this._uploadFile, this._downloadFile, arg0), arg1);
+                const result = await this.actor.registerUser(arg0);
                 return result;
             } catch (e) {
                 this.processError(e);
                 throw new Error("unreachable");
             }
         } else {
-            const result = await this.actor.markWinner(to_candid_GameMode_n3(this._uploadFile, this._downloadFile, arg0), arg1);
-            return result;
-        }
-    }
-    async openLongPosition(arg0: GameMode, arg1: number, arg2: number, arg3: number): Promise<void> {
-        if (this.processError) {
-            try {
-                const result = await this.actor.openLongPosition(to_candid_GameMode_n3(this._uploadFile, this._downloadFile, arg0), arg1, arg2, arg3);
-                return result;
-            } catch (e) {
-                this.processError(e);
-                throw new Error("unreachable");
-            }
-        } else {
-            const result = await this.actor.openLongPosition(to_candid_GameMode_n3(this._uploadFile, this._downloadFile, arg0), arg1, arg2, arg3);
-            return result;
-        }
-    }
-    async openShortPosition(arg0: GameMode, arg1: number, arg2: number, arg3: number): Promise<void> {
-        if (this.processError) {
-            try {
-                const result = await this.actor.openShortPosition(to_candid_GameMode_n3(this._uploadFile, this._downloadFile, arg0), arg1, arg2, arg3);
-                return result;
-            } catch (e) {
-                this.processError(e);
-                throw new Error("unreachable");
-            }
-        } else {
-            const result = await this.actor.openShortPosition(to_candid_GameMode_n3(this._uploadFile, this._downloadFile, arg0), arg1, arg2, arg3);
-            return result;
-        }
-    }
-    async resetAccount(arg0: GameMode): Promise<void> {
-        if (this.processError) {
-            try {
-                const result = await this.actor.resetAccount(to_candid_GameMode_n3(this._uploadFile, this._downloadFile, arg0));
-                return result;
-            } catch (e) {
-                this.processError(e);
-                throw new Error("unreachable");
-            }
-        } else {
-            const result = await this.actor.resetAccount(to_candid_GameMode_n3(this._uploadFile, this._downloadFile, arg0));
+            const result = await this.actor.registerUser(arg0);
             return result;
         }
     }
@@ -440,17 +399,17 @@ export class Backend implements backendInterface {
             return result;
         }
     }
-    async sellICP(arg0: GameMode, arg1: number, arg2: number): Promise<void> {
+    async sellICP(arg0: number): Promise<void> {
         if (this.processError) {
             try {
-                const result = await this.actor.sellICP(to_candid_GameMode_n3(this._uploadFile, this._downloadFile, arg0), arg1, arg2);
+                const result = await this.actor.sellICP(arg0);
                 return result;
             } catch (e) {
                 this.processError(e);
                 throw new Error("unreachable");
             }
         } else {
-            const result = await this.actor.sellICP(to_candid_GameMode_n3(this._uploadFile, this._downloadFile, arg0), arg1, arg2);
+            const result = await this.actor.sellICP(arg0);
             return result;
         }
     }
@@ -469,59 +428,50 @@ export class Backend implements backendInterface {
         }
     }
 }
-function from_candid_LeveragedPosition_n10(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: _LeveragedPosition): LeveragedPosition {
-    return from_candid_record_n11(_uploadFile, _downloadFile, value);
+function from_candid_LedgerTransaction_n7(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: _LedgerTransaction): LedgerTransaction {
+    return from_candid_record_n8(_uploadFile, _downloadFile, value);
 }
-function from_candid_PositionType_n12(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: _PositionType): PositionType {
-    return from_candid_variant_n13(_uploadFile, _downloadFile, value);
+function from_candid_TransactionType_n9(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: _TransactionType): TransactionType {
+    return from_candid_variant_n10(_uploadFile, _downloadFile, value);
 }
-function from_candid_UserRole_n7(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: _UserRole): UserRole {
-    return from_candid_variant_n8(_uploadFile, _downloadFile, value);
+function from_candid_UserRole_n4(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: _UserRole): UserRole {
+    return from_candid_variant_n5(_uploadFile, _downloadFile, value);
 }
-function from_candid_opt_n5(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: [] | [_Account]): Account | null {
+function from_candid_opt_n3(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: [] | [_UserProfile]): UserProfile | null {
     return value.length === 0 ? null : value[0];
 }
-function from_candid_opt_n6(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: [] | [_UserProfile]): UserProfile | null {
-    return value.length === 0 ? null : value[0];
-}
-function from_candid_record_n11(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: {
-    leverage: number;
-    isOpen: boolean;
-    positionType: _PositionType;
-    liquidationPrice: number;
-    entryPrice: number;
-    margin: number;
-    amountICP: number;
-    openedAt: _Time;
+function from_candid_record_n8(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: {
+    transactionType: _TransactionType;
+    icpBalanceAfter: number;
+    timestamp: _Time;
+    price: number;
+    cashBalanceAfter: number;
+    icpAmount: number;
 }): {
-    leverage: number;
-    isOpen: boolean;
-    positionType: PositionType;
-    liquidationPrice: number;
-    entryPrice: number;
-    margin: number;
-    amountICP: number;
-    openedAt: Time;
+    transactionType: TransactionType;
+    icpBalanceAfter: number;
+    timestamp: Time;
+    price: number;
+    cashBalanceAfter: number;
+    icpAmount: number;
 } {
     return {
-        leverage: value.leverage,
-        isOpen: value.isOpen,
-        positionType: from_candid_PositionType_n12(_uploadFile, _downloadFile, value.positionType),
-        liquidationPrice: value.liquidationPrice,
-        entryPrice: value.entryPrice,
-        margin: value.margin,
-        amountICP: value.amountICP,
-        openedAt: value.openedAt
+        transactionType: from_candid_TransactionType_n9(_uploadFile, _downloadFile, value.transactionType),
+        icpBalanceAfter: value.icpBalanceAfter,
+        timestamp: value.timestamp,
+        price: value.price,
+        cashBalanceAfter: value.cashBalanceAfter,
+        icpAmount: value.icpAmount
     };
 }
-function from_candid_variant_n13(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: {
-    long: null;
+function from_candid_variant_n10(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: {
+    buy: null;
 } | {
-    short: null;
-}): PositionType {
-    return "long" in value ? PositionType.long : "short" in value ? PositionType.short : value;
+    sell: null;
+}): TransactionType {
+    return "buy" in value ? TransactionType.buy : "sell" in value ? TransactionType.sell : value;
 }
-function from_candid_variant_n8(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: {
+function from_candid_variant_n5(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: {
     admin: null;
 } | {
     user: null;
@@ -530,11 +480,8 @@ function from_candid_variant_n8(_uploadFile: (file: ExternalBlob) => Promise<Uin
 }): UserRole {
     return "admin" in value ? UserRole.admin : "user" in value ? UserRole.user : "guest" in value ? UserRole.guest : value;
 }
-function from_candid_vec_n9(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: Array<_LeveragedPosition>): Array<LeveragedPosition> {
-    return value.map((x)=>from_candid_LeveragedPosition_n10(_uploadFile, _downloadFile, x));
-}
-function to_candid_GameMode_n3(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: GameMode): _GameMode {
-    return to_candid_variant_n4(_uploadFile, _downloadFile, value);
+function from_candid_vec_n6(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: Array<_LedgerTransaction>): Array<LedgerTransaction> {
+    return value.map((x)=>from_candid_LedgerTransaction_n7(_uploadFile, _downloadFile, x));
 }
 function to_candid_UserRole_n1(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: UserRole): _UserRole {
     return to_candid_variant_n2(_uploadFile, _downloadFile, value);
@@ -552,25 +499,6 @@ function to_candid_variant_n2(_uploadFile: (file: ExternalBlob) => Promise<Uint8
         user: null
     } : value == UserRole.guest ? {
         guest: null
-    } : value;
-}
-function to_candid_variant_n4(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: GameMode): {
-    monthly: null;
-} | {
-    yearly: null;
-} | {
-    daily: null;
-} | {
-    weekly: null;
-} {
-    return value == GameMode.monthly ? {
-        monthly: null
-    } : value == GameMode.yearly ? {
-        yearly: null
-    } : value == GameMode.daily ? {
-        daily: null
-    } : value == GameMode.weekly ? {
-        weekly: null
     } : value;
 }
 export interface CreateActorOptions {

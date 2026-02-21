@@ -1,130 +1,83 @@
-import { useState } from 'react';
+import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { useActor } from './useActor';
-import { useCurrentICPPrice } from './useICPPriceData';
-import { useQueryClient } from '@tanstack/react-query';
-import { toast } from 'sonner';
-import { useGameMode } from '@/contexts/GameModeContext';
 
-export function useTradingActions() {
+function parseBackendError(error: any): string {
+  const errorMessage = error?.message || String(error);
+  
+  // Check for authorization/registration errors
+  if (errorMessage.includes('Unauthorized') || errorMessage.includes('Only users can')) {
+    return 'Account setup required. Please wait a moment and try again.';
+  }
+  
+  // Check for insufficient balance errors
+  if (errorMessage.includes('Insufficient cash balance')) {
+    return 'Insufficient cash balance for this purchase.';
+  }
+  
+  if (errorMessage.includes('Insufficient ICP balance')) {
+    return 'Insufficient ICP balance for this sale.';
+  }
+  
+  // Generic error
+  return errorMessage || 'Transaction failed. Please try again.';
+}
+
+export function useBuyICP() {
   const { actor } = useActor();
-  const { gameMode } = useGameMode();
-  const { data: currentPrice = 0, isLoading: isLoadingPrice } = useCurrentICPPrice();
-  const [isBuying, setIsBuying] = useState(false);
-  const [isSelling, setIsSelling] = useState(false);
-  const [isResetting, setIsResetting] = useState(false);
   const queryClient = useQueryClient();
 
-  const buyICP = async (amount: number): Promise<boolean> => {
-    if (!actor) {
-      toast.error('Not connected');
-      return false;
-    }
-
-    if (currentPrice <= 0) {
-      toast.error('Price data not available');
-      return false;
-    }
-
-    setIsBuying(true);
-    try {
-      await actor.buyICP(gameMode, amount, currentPrice);
-      toast.success(`Successfully bought ${amount.toFixed(4)} ICP for $${(amount * currentPrice).toFixed(2)}`);
+  return useMutation({
+    mutationFn: async (amountUSD: number) => {
+      if (!actor) throw new Error('Connection not ready. Please wait a moment.');
       
-      // Invalidate queries to refresh data
-      queryClient.invalidateQueries({ queryKey: ['leaderboard', gameMode] });
-      
-      return true;
-    } catch (error) {
-      let errorMessage = 'Failed to buy ICP';
-      if (error instanceof Error) {
-        if (error.message.includes('Insufficient funds')) {
-          errorMessage = 'Insufficient funds. You don\'t have enough cash to complete this purchase.';
-        } else {
-          errorMessage = error.message;
-        }
+      // Ensure account exists before trading
+      try {
+        await actor.getOrCreateAccount();
+      } catch (error: any) {
+        throw new Error(parseBackendError(error));
       }
-      toast.error(errorMessage);
-      return false;
-    } finally {
-      setIsBuying(false);
-    }
-  };
-
-  const sellICP = async (amount: number): Promise<boolean> => {
-    if (!actor) {
-      toast.error('Not connected');
-      return false;
-    }
-
-    if (currentPrice <= 0) {
-      toast.error('Price data not available');
-      return false;
-    }
-
-    setIsSelling(true);
-    try {
-      await actor.sellICP(gameMode, amount, currentPrice);
-      toast.success(`Successfully sold ${amount.toFixed(4)} ICP for $${(amount * currentPrice).toFixed(2)}`);
       
-      // Invalidate queries to refresh data
-      queryClient.invalidateQueries({ queryKey: ['leaderboard', gameMode] });
+      await actor.buyICP(amountUSD);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['balance'] });
+      queryClient.invalidateQueries({ queryKey: ['portfolio'] });
+      queryClient.invalidateQueries({ queryKey: ['transactionHistory'] });
+    },
+    onError: (error: any) => {
+      console.error('Buy ICP error:', error);
+    },
+    retry: 1,
+    retryDelay: 1000,
+  });
+}
+
+export function useSellICP() {
+  const { actor } = useActor();
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async (amountICP: number) => {
+      if (!actor) throw new Error('Connection not ready. Please wait a moment.');
       
-      return true;
-    } catch (error) {
-      let errorMessage = 'Failed to sell ICP';
-      if (error instanceof Error) {
-        if (error.message.includes('Insufficient ICP balance')) {
-          errorMessage = 'Insufficient ICP. You don\'t have enough ICP to complete this sale.';
-        } else {
-          errorMessage = error.message;
-        }
+      // Ensure account exists before trading
+      try {
+        await actor.getOrCreateAccount();
+      } catch (error: any) {
+        throw new Error(parseBackendError(error));
       }
-      toast.error(errorMessage);
-      return false;
-    } finally {
-      setIsSelling(false);
-    }
-  };
-
-  const resetAccount = async (): Promise<boolean> => {
-    if (!actor) {
-      toast.error('Not connected');
-      return false;
-    }
-
-    setIsResetting(true);
-    try {
-      await actor.resetAccount(gameMode);
-      toast.success('Account reset successfully! Cash balance: $10,000.00, ICP holdings: 0');
       
-      // Invalidate queries to refresh data
-      queryClient.invalidateQueries({ queryKey: ['leaderboard', gameMode] });
-      
-      return true;
-    } catch (error) {
-      let errorMessage = 'Failed to reset account';
-      if (error instanceof Error) {
-        if (error.message.includes('Unauthorized')) {
-          errorMessage = 'Unauthorized: Only admins can reset accounts.';
-        } else {
-          errorMessage = error.message;
-        }
-      }
-      toast.error(errorMessage);
-      return false;
-    } finally {
-      setIsResetting(false);
-    }
-  };
-
-  return {
-    currentPrice,
-    isLoadingPrice,
-    buyICP,
-    sellICP,
-    resetAccount,
-    isBuying,
-    isSelling,
-    isResetting,
-  };
+      await actor.sellICP(amountICP);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['balance'] });
+      queryClient.invalidateQueries({ queryKey: ['portfolio'] });
+      queryClient.invalidateQueries({ queryKey: ['transactionHistory'] });
+    },
+    onError: (error: any) => {
+      console.error('Sell ICP error:', error);
+    },
+    retry: 1,
+    retryDelay: 1000,
+  });
 }

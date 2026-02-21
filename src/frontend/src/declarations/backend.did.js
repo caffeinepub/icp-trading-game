@@ -13,39 +13,27 @@ export const UserRole = IDL.Variant({
   'user' : IDL.Null,
   'guest' : IDL.Null,
 });
-export const GameMode = IDL.Variant({
-  'monthly' : IDL.Null,
-  'yearly' : IDL.Null,
-  'daily' : IDL.Null,
-  'weekly' : IDL.Null,
-});
+export const UserProfile = IDL.Record({ 'name' : IDL.Text });
 export const Time = IDL.Int;
 export const Account = IDL.Record({
   'pnl' : IDL.Float64,
+  'totalPortfolioValue' : IDL.Float64,
   'lastUpdated' : Time,
   'icpBalance' : IDL.Float64,
   'cashBalance' : IDL.Float64,
+  'principalId' : IDL.Principal,
 });
-export const UserProfile = IDL.Record({ 'name' : IDL.Text });
-export const PositionType = IDL.Variant({
-  'long' : IDL.Null,
-  'short' : IDL.Null,
+export const TransactionType = IDL.Variant({
+  'buy' : IDL.Null,
+  'sell' : IDL.Null,
 });
-export const LeveragedPosition = IDL.Record({
-  'leverage' : IDL.Float64,
-  'isOpen' : IDL.Bool,
-  'positionType' : PositionType,
-  'liquidationPrice' : IDL.Float64,
-  'entryPrice' : IDL.Float64,
-  'margin' : IDL.Float64,
-  'amountICP' : IDL.Float64,
-  'openedAt' : Time,
-});
-export const Winner = IDL.Record({
-  'finalPortfolioValue' : IDL.Float64,
-  'winner' : IDL.Principal,
-  'profitLoss' : IDL.Float64,
+export const LedgerTransaction = IDL.Record({
+  'transactionType' : TransactionType,
+  'icpBalanceAfter' : IDL.Float64,
   'timestamp' : Time,
+  'price' : IDL.Float64,
+  'cashBalanceAfter' : IDL.Float64,
+  'icpAmount' : IDL.Float64,
 });
 export const http_header = IDL.Record({
   'value' : IDL.Text,
@@ -69,25 +57,25 @@ export const TransformationOutput = IDL.Record({
 export const idlService = IDL.Service({
   '_initializeAccessControlWithSecret' : IDL.Func([IDL.Text], [], []),
   'assignCallerUserRole' : IDL.Func([IDL.Principal, UserRole], [], []),
-  'buyICP' : IDL.Func([GameMode, IDL.Float64, IDL.Float64], [], []),
-  'closePosition' : IDL.Func([GameMode, IDL.Nat, IDL.Float64], [], []),
-  'createAccount' : IDL.Func([GameMode], [], []),
-  'getAccount' : IDL.Func(
-      [GameMode, IDL.Principal],
-      [IDL.Opt(Account)],
+  'buyICP' : IDL.Func([IDL.Float64], [], []),
+  'getBalance' : IDL.Func([], [IDL.Text, IDL.Float64, IDL.Float64], []),
+  'getBalanceForUser' : IDL.Func(
+      [IDL.Principal],
+      [IDL.Text, IDL.Float64, IDL.Float64],
       ['query'],
     ),
   'getCallerUserProfile' : IDL.Func([], [IDL.Opt(UserProfile)], ['query']),
   'getCallerUserRole' : IDL.Func([], [UserRole], ['query']),
   'getICPPrice' : IDL.Func([], [IDL.Float64], []),
-  'getLeaderboard' : IDL.Func(
-      [GameMode],
-      [IDL.Vec(IDL.Tuple(IDL.Principal, Account))],
+  'getOrCreateAccount' : IDL.Func([], [Account], []),
+  'getTransactionHistory' : IDL.Func(
+      [],
+      [IDL.Vec(LedgerTransaction)],
       ['query'],
     ),
-  'getOpenPositions' : IDL.Func(
-      [GameMode],
-      [IDL.Vec(LeveragedPosition)],
+  'getTransactionHistoryForUser' : IDL.Func(
+      [IDL.Principal],
+      [IDL.Vec(LedgerTransaction)],
       ['query'],
     ),
   'getUserProfile' : IDL.Func(
@@ -95,22 +83,11 @@ export const idlService = IDL.Service({
       [IDL.Opt(UserProfile)],
       ['query'],
     ),
-  'getWinners' : IDL.Func([GameMode], [IDL.Vec(Winner)], ['query']),
+  'initializeDefaultGameMode' : IDL.Func([], [], []),
   'isCallerAdmin' : IDL.Func([], [IDL.Bool], ['query']),
-  'markWinner' : IDL.Func([GameMode, Winner], [], []),
-  'openLongPosition' : IDL.Func(
-      [GameMode, IDL.Float64, IDL.Float64, IDL.Float64],
-      [],
-      [],
-    ),
-  'openShortPosition' : IDL.Func(
-      [GameMode, IDL.Float64, IDL.Float64, IDL.Float64],
-      [],
-      [],
-    ),
-  'resetAccount' : IDL.Func([GameMode], [], []),
+  'registerUser' : IDL.Func([IDL.Text], [], []),
   'saveCallerUserProfile' : IDL.Func([UserProfile], [], []),
-  'sellICP' : IDL.Func([GameMode, IDL.Float64, IDL.Float64], [], []),
+  'sellICP' : IDL.Func([IDL.Float64], [], []),
   'transform' : IDL.Func(
       [TransformationInput],
       [TransformationOutput],
@@ -126,36 +103,24 @@ export const idlFactory = ({ IDL }) => {
     'user' : IDL.Null,
     'guest' : IDL.Null,
   });
-  const GameMode = IDL.Variant({
-    'monthly' : IDL.Null,
-    'yearly' : IDL.Null,
-    'daily' : IDL.Null,
-    'weekly' : IDL.Null,
-  });
+  const UserProfile = IDL.Record({ 'name' : IDL.Text });
   const Time = IDL.Int;
   const Account = IDL.Record({
     'pnl' : IDL.Float64,
+    'totalPortfolioValue' : IDL.Float64,
     'lastUpdated' : Time,
     'icpBalance' : IDL.Float64,
     'cashBalance' : IDL.Float64,
+    'principalId' : IDL.Principal,
   });
-  const UserProfile = IDL.Record({ 'name' : IDL.Text });
-  const PositionType = IDL.Variant({ 'long' : IDL.Null, 'short' : IDL.Null });
-  const LeveragedPosition = IDL.Record({
-    'leverage' : IDL.Float64,
-    'isOpen' : IDL.Bool,
-    'positionType' : PositionType,
-    'liquidationPrice' : IDL.Float64,
-    'entryPrice' : IDL.Float64,
-    'margin' : IDL.Float64,
-    'amountICP' : IDL.Float64,
-    'openedAt' : Time,
-  });
-  const Winner = IDL.Record({
-    'finalPortfolioValue' : IDL.Float64,
-    'winner' : IDL.Principal,
-    'profitLoss' : IDL.Float64,
+  const TransactionType = IDL.Variant({ 'buy' : IDL.Null, 'sell' : IDL.Null });
+  const LedgerTransaction = IDL.Record({
+    'transactionType' : TransactionType,
+    'icpBalanceAfter' : IDL.Float64,
     'timestamp' : Time,
+    'price' : IDL.Float64,
+    'cashBalanceAfter' : IDL.Float64,
+    'icpAmount' : IDL.Float64,
   });
   const http_header = IDL.Record({ 'value' : IDL.Text, 'name' : IDL.Text });
   const http_request_result = IDL.Record({
@@ -176,25 +141,25 @@ export const idlFactory = ({ IDL }) => {
   return IDL.Service({
     '_initializeAccessControlWithSecret' : IDL.Func([IDL.Text], [], []),
     'assignCallerUserRole' : IDL.Func([IDL.Principal, UserRole], [], []),
-    'buyICP' : IDL.Func([GameMode, IDL.Float64, IDL.Float64], [], []),
-    'closePosition' : IDL.Func([GameMode, IDL.Nat, IDL.Float64], [], []),
-    'createAccount' : IDL.Func([GameMode], [], []),
-    'getAccount' : IDL.Func(
-        [GameMode, IDL.Principal],
-        [IDL.Opt(Account)],
+    'buyICP' : IDL.Func([IDL.Float64], [], []),
+    'getBalance' : IDL.Func([], [IDL.Text, IDL.Float64, IDL.Float64], []),
+    'getBalanceForUser' : IDL.Func(
+        [IDL.Principal],
+        [IDL.Text, IDL.Float64, IDL.Float64],
         ['query'],
       ),
     'getCallerUserProfile' : IDL.Func([], [IDL.Opt(UserProfile)], ['query']),
     'getCallerUserRole' : IDL.Func([], [UserRole], ['query']),
     'getICPPrice' : IDL.Func([], [IDL.Float64], []),
-    'getLeaderboard' : IDL.Func(
-        [GameMode],
-        [IDL.Vec(IDL.Tuple(IDL.Principal, Account))],
+    'getOrCreateAccount' : IDL.Func([], [Account], []),
+    'getTransactionHistory' : IDL.Func(
+        [],
+        [IDL.Vec(LedgerTransaction)],
         ['query'],
       ),
-    'getOpenPositions' : IDL.Func(
-        [GameMode],
-        [IDL.Vec(LeveragedPosition)],
+    'getTransactionHistoryForUser' : IDL.Func(
+        [IDL.Principal],
+        [IDL.Vec(LedgerTransaction)],
         ['query'],
       ),
     'getUserProfile' : IDL.Func(
@@ -202,22 +167,11 @@ export const idlFactory = ({ IDL }) => {
         [IDL.Opt(UserProfile)],
         ['query'],
       ),
-    'getWinners' : IDL.Func([GameMode], [IDL.Vec(Winner)], ['query']),
+    'initializeDefaultGameMode' : IDL.Func([], [], []),
     'isCallerAdmin' : IDL.Func([], [IDL.Bool], ['query']),
-    'markWinner' : IDL.Func([GameMode, Winner], [], []),
-    'openLongPosition' : IDL.Func(
-        [GameMode, IDL.Float64, IDL.Float64, IDL.Float64],
-        [],
-        [],
-      ),
-    'openShortPosition' : IDL.Func(
-        [GameMode, IDL.Float64, IDL.Float64, IDL.Float64],
-        [],
-        [],
-      ),
-    'resetAccount' : IDL.Func([GameMode], [], []),
+    'registerUser' : IDL.Func([IDL.Text], [], []),
     'saveCallerUserProfile' : IDL.Func([UserProfile], [], []),
-    'sellICP' : IDL.Func([GameMode, IDL.Float64, IDL.Float64], [], []),
+    'sellICP' : IDL.Func([IDL.Float64], [], []),
     'transform' : IDL.Func(
         [TransformationInput],
         [TransformationOutput],

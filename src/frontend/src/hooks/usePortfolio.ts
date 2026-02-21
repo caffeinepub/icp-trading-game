@@ -1,64 +1,39 @@
 import { useQuery } from '@tanstack/react-query';
 import { useActor } from './useActor';
-import { useGameMode } from '@/contexts/GameModeContext';
-import { useCurrentICPPrice } from './useICPPriceData';
-import { useInternetIdentity } from './useInternetIdentity';
-import { usePositions } from './usePositions';
-
-export interface Portfolio {
-  cashBalance: number;
-  icpBalance: number;
-  icpValue: number;
-  totalMarginLocked: number;
-  totalUnrealizedPnL: number;
-  totalValue: number;
-  profitLoss: number;
-}
+import { useICPPriceData } from './useICPPriceData';
 
 export function usePortfolio() {
   const { actor, isFetching: actorFetching } = useActor();
-  const { gameMode } = useGameMode();
-  const { data: currentPrice = 0 } = useCurrentICPPrice();
-  const { identity } = useInternetIdentity();
-  const { data: positions = [] } = usePositions();
+  const { data: priceData } = useICPPriceData('1h');
+  const currentPrice = priceData?.currentPrice || 0;
 
-  const query = useQuery<Portfolio | null>({
-    queryKey: ['portfolio', gameMode, currentPrice, positions.length],
+  return useQuery({
+    queryKey: ['portfolio'],
     queryFn: async () => {
-      if (!actor || !identity) return null;
+      if (!actor) throw new Error('Actor not available');
       
-      const principal = identity.getPrincipal();
-      const account = await actor.getAccount(gameMode, principal);
-      
-      if (!account) return null;
+      try {
+        const account = await actor.getOrCreateAccount();
+        
+        const icpValue = account.icpBalance * currentPrice;
+        const totalValue = account.cashBalance + icpValue;
+        const realizedPnL = totalValue - 10000;
 
-      const icpValue = account.icpBalance * currentPrice;
-      
-      // Calculate total margin locked and unrealized P&L from positions
-      const totalMarginLocked = positions.reduce((sum, pos) => sum + pos.margin, 0);
-      const totalUnrealizedPnL = positions.reduce((sum, pos) => sum + pos.unrealizedPnL, 0);
-      
-      // Total portfolio value includes cash, ICP value, margin locked, and unrealized P&L
-      const totalValue = account.cashBalance + icpValue + totalMarginLocked + totalUnrealizedPnL;
-      const profitLoss = totalValue - 10000;
-
-      return {
-        cashBalance: account.cashBalance,
-        icpBalance: account.icpBalance,
-        icpValue,
-        totalMarginLocked,
-        totalUnrealizedPnL,
-        totalValue,
-        profitLoss,
-      };
+        return {
+          cashBalance: account.cashBalance,
+          icpHoldings: account.icpBalance,
+          icpValue,
+          totalValue,
+          realizedPnL,
+        };
+      } catch (error: any) {
+        console.error('Portfolio fetch error:', error);
+        throw error;
+      }
     },
-    enabled: !!actor && !actorFetching && !!identity,
-    refetchInterval: 30000,
+    enabled: !!actor && !actorFetching && currentPrice > 0,
+    refetchInterval: 10000,
+    retry: 3,
+    retryDelay: (attemptIndex) => Math.min(1000 * 2 ** attemptIndex, 5000),
   });
-
-  return {
-    portfolio: query.data,
-    isLoading: actorFetching || query.isLoading,
-    error: query.error,
-  };
 }

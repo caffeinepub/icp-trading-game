@@ -1,154 +1,135 @@
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
-import { Skeleton } from '@/components/ui/skeleton';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
+import { Button } from '@/components/ui/button';
+import { Badge } from '@/components/ui/badge';
 import { usePositions } from '@/hooks/usePositions';
 import { useLeverageActions } from '@/hooks/useLeverageActions';
-import { useCurrentICPPrice } from '@/hooks/useICPPriceData';
-import { TrendingUp, TrendingDown, X } from 'lucide-react';
-import { PositionType } from '@/backend';
+import { Loader2, TrendingUp, TrendingDown, AlertTriangle } from 'lucide-react';
+import { useActor } from '@/hooks/useActor';
 
 export default function Positions() {
-  const { data: positions = [], isLoading, error } = usePositions();
+  const { positions, isLoading } = usePositions();
   const { closePosition, isClosing } = useLeverageActions();
-  const { data: currentPrice = 0 } = useCurrentICPPrice();
+  const { actor, isFetching } = useActor();
+  
+  // Compute initialization state from actor availability
+  const isInitializing = !actor || isFetching;
 
-  const handleClosePosition = async (positionIndex: number) => {
-    try {
-      await closePosition(positionIndex, currentPrice);
-    } catch (error) {
-      // Error is handled by the mutation
-    }
+  const handleClosePosition = async (index: number) => {
+    await closePosition(index);
   };
 
   if (isLoading) {
     return (
-      <div className="max-w-6xl mx-auto">
-        <Card>
-          <CardHeader>
-            <Skeleton className="h-8 w-48" />
-          </CardHeader>
-          <CardContent>
-            <div className="space-y-3">
-              {[...Array(3)].map((_, i) => (
-                <Skeleton key={i} className="h-16 w-full" />
-              ))}
-            </div>
-          </CardContent>
-        </Card>
-      </div>
+      <Card>
+        <CardHeader>
+          <CardTitle>Open Positions</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="flex items-center justify-center py-12">
+            <Loader2 className="h-8 w-8 animate-spin text-primary" />
+          </div>
+        </CardContent>
+      </Card>
     );
   }
 
-  if (error) {
+  if (positions.length === 0) {
     return (
-      <div className="max-w-6xl mx-auto">
-        <Card>
-          <CardContent className="py-12 text-center text-muted-foreground">
-            <p>Failed to load positions. Please try again.</p>
-          </CardContent>
-        </Card>
-      </div>
+      <Card>
+        <CardHeader>
+          <CardTitle>Open Positions</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="text-center py-12">
+            <p className="text-muted-foreground">No open positions</p>
+            <p className="text-sm text-muted-foreground mt-2">
+              Open a leveraged position from the trading panel
+            </p>
+          </div>
+        </CardContent>
+      </Card>
     );
   }
 
   return (
-    <div className="max-w-6xl mx-auto">
-      <Card>
-        <CardHeader>
-          <CardTitle>Active Leveraged Positions</CardTitle>
-          <p className="text-sm text-muted-foreground">
-            Your open leveraged long and short positions
-          </p>
-        </CardHeader>
-        <CardContent>
-          {positions.length === 0 ? (
-            <div className="py-12 text-center text-muted-foreground">
-              <p>No active positions. Open a leveraged position to get started.</p>
-            </div>
-          ) : (
-            <div className="overflow-x-auto">
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>Type</TableHead>
-                    <TableHead>Leverage</TableHead>
-                    <TableHead className="text-right">Entry Price</TableHead>
-                    <TableHead className="text-right">Current Price</TableHead>
-                    <TableHead className="text-right">ICP Amount</TableHead>
-                    <TableHead className="text-right">Margin</TableHead>
-                    <TableHead className="text-right">Unrealized P&L</TableHead>
-                    <TableHead className="text-right">Liquidation Price</TableHead>
-                    <TableHead className="text-right">Action</TableHead>
+    <Card>
+      <CardHeader>
+        <CardTitle>Open Positions</CardTitle>
+      </CardHeader>
+      <CardContent>
+        <div className="rounded-md border">
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead>Type</TableHead>
+                <TableHead>Leverage</TableHead>
+                <TableHead>Entry Price</TableHead>
+                <TableHead>Current Price</TableHead>
+                <TableHead>Amount</TableHead>
+                <TableHead>Margin</TableHead>
+                <TableHead>P&L</TableHead>
+                <TableHead>Liquidation</TableHead>
+                <TableHead className="text-right">Action</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {positions.map((position, index) => {
+                const isLong = position.positionType === 'long';
+                const isProfitable = position.unrealizedPnL >= 0;
+                const nearLiquidation = isLong
+                  ? position.currentPrice <= position.liquidationPrice * 1.1
+                  : position.currentPrice >= position.liquidationPrice * 0.9;
+
+                return (
+                  <TableRow key={index}>
+                    <TableCell>
+                      <Badge
+                        variant={isLong ? 'default' : 'secondary'}
+                        className={isLong ? 'bg-emerald-500 hover:bg-emerald-600' : 'bg-red-500 hover:bg-red-600'}
+                      >
+                        {isLong ? (
+                          <TrendingUp className="h-3 w-3 mr-1" />
+                        ) : (
+                          <TrendingDown className="h-3 w-3 mr-1" />
+                        )}
+                        {isLong ? 'Long' : 'Short'}
+                      </Badge>
+                    </TableCell>
+                    <TableCell className="font-medium">{position.leverage}x</TableCell>
+                    <TableCell>${position.entryPrice.toFixed(2)}</TableCell>
+                    <TableCell>${position.currentPrice.toFixed(2)}</TableCell>
+                    <TableCell>{position.amountICP.toFixed(4)} ICP</TableCell>
+                    <TableCell>${position.margin.toFixed(2)}</TableCell>
+                    <TableCell>
+                      <span className={`font-semibold ${isProfitable ? 'text-emerald-500' : 'text-red-500'}`}>
+                        {isProfitable ? '+' : ''}${position.unrealizedPnL.toFixed(2)}
+                      </span>
+                    </TableCell>
+                    <TableCell>
+                      <div className="flex items-center gap-2">
+                        {nearLiquidation && <AlertTriangle className="h-4 w-4 text-yellow-500" />}
+                        ${position.liquidationPrice.toFixed(2)}
+                      </div>
+                    </TableCell>
+                    <TableCell className="text-right">
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => handleClosePosition(index)}
+                        disabled={isClosing || isInitializing}
+                      >
+                        {isClosing && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                        Close
+                      </Button>
+                    </TableCell>
                   </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {positions.map((position, index) => {
-                    const isLong = position.positionType === PositionType.long_;
-                    const pnlPositive = position.unrealizedPnL >= 0;
-                    
-                    return (
-                      <TableRow key={index}>
-                        <TableCell>
-                          <div className="flex items-center gap-2">
-                            {isLong ? (
-                              <>
-                                <TrendingUp className="h-4 w-4 text-emerald-500" />
-                                <span className="font-medium text-emerald-500">Long</span>
-                              </>
-                            ) : (
-                              <>
-                                <TrendingDown className="h-4 w-4 text-red-500" />
-                                <span className="font-medium text-red-500">Short</span>
-                              </>
-                            )}
-                          </div>
-                        </TableCell>
-                        <TableCell>
-                          <span className="font-medium">{position.leverage}x</span>
-                        </TableCell>
-                        <TableCell className="text-right font-mono">
-                          ${position.entryPrice.toFixed(2)}
-                        </TableCell>
-                        <TableCell className="text-right font-mono">
-                          ${currentPrice.toFixed(2)}
-                        </TableCell>
-                        <TableCell className="text-right font-mono">
-                          {position.amountICP.toFixed(4)} ICP
-                        </TableCell>
-                        <TableCell className="text-right font-mono">
-                          ${position.margin.toFixed(2)}
-                        </TableCell>
-                        <TableCell className="text-right">
-                          <span className={`font-semibold ${pnlPositive ? 'text-emerald-500' : 'text-red-500'}`}>
-                            {pnlPositive ? '+' : ''}${position.unrealizedPnL.toFixed(2)}
-                          </span>
-                        </TableCell>
-                        <TableCell className="text-right font-mono">
-                          <span className="text-orange-500 font-medium">
-                            ${position.liquidationPrice.toFixed(2)}
-                          </span>
-                        </TableCell>
-                        <TableCell className="text-right">
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            onClick={() => handleClosePosition(index)}
-                            disabled={isClosing}
-                            className="h-8 w-8 p-0"
-                          >
-                            <X className="h-4 w-4" />
-                          </Button>
-                        </TableCell>
-                      </TableRow>
-                    );
-                  })}
-                </TableBody>
-              </Table>
-            </div>
-          )}
-        </CardContent>
-      </Card>
-    </div>
+                );
+              })}
+            </TableBody>
+          </Table>
+        </div>
+      </CardContent>
+    </Card>
   );
 }

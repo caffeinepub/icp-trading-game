@@ -1,434 +1,318 @@
-import { useState } from 'react';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import React, { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
-import { useTradingActions } from '@/hooks/useTradingActions';
-import { useLeverageActions } from '@/hooks/useLeverageActions';
-import { Loader2, ArrowLeftRight } from 'lucide-react';
-import { usePortfolio } from '@/hooks/usePortfolio';
-
-type InputMode = 'icp' | 'dollar';
-type PositionType = 'long' | 'short';
-
-const LEVERAGE_OPTIONS = [
-  { value: 2, label: '2x' },
-  { value: 3, label: '3x' },
-  { value: 5, label: '5x' },
-  { value: 10, label: '10x' },
-  { value: 20, label: '20x' },
-];
+import { useBuyICP, useSellICP } from '../hooks/useTradingActions';
+import { usePortfolio } from '../hooks/usePortfolio';
+import { useICPPriceData } from '../hooks/useICPPriceData';
+import { Loader2, CheckCircle2, XCircle, AlertCircle } from 'lucide-react';
+import { toast } from 'sonner';
 
 export default function TradingPanel() {
-  const [buyAmount, setBuyAmount] = useState('');
-  const [sellAmount, setSellAmount] = useState('');
-  const [leverageAmount, setLeverageAmount] = useState('');
-  const [positionType, setPositionType] = useState<PositionType>('long');
-  const [selectedLeverage, setSelectedLeverage] = useState<number>(2);
-  const [buyInputMode, setBuyInputMode] = useState<InputMode>('icp');
-  const [sellInputMode, setSellInputMode] = useState<InputMode>('icp');
-  const { currentPrice, isLoadingPrice, buyICP, sellICP, isBuying, isSelling } = useTradingActions();
-  const { openLong, openShort, isOpeningLong, isOpeningShort } = useLeverageActions();
-  const { portfolio } = usePortfolio();
+  const [inputMode, setInputMode] = useState<'usd' | 'icp'>('usd');
+  const [usdAmount, setUsdAmount] = useState('');
+  const [icpAmount, setIcpAmount] = useState('');
+
+  const { data: priceData } = useICPPriceData('1h');
+  const currentPrice = priceData?.currentPrice || 0;
+  
+  const { data: portfolio, isLoading: portfolioLoading, error: portfolioError } = usePortfolio();
+  const buyMutation = useBuyICP();
+  const sellMutation = useSellICP();
+
+  const handleUsdChange = (value: string) => {
+    setUsdAmount(value);
+    if (value && currentPrice > 0) {
+      const icp = parseFloat(value) / currentPrice;
+      setIcpAmount(icp.toFixed(6));
+    } else {
+      setIcpAmount('');
+    }
+  };
+
+  const handleIcpChange = (value: string) => {
+    setIcpAmount(value);
+    if (value && currentPrice > 0) {
+      const usd = parseFloat(value) * currentPrice;
+      setUsdAmount(usd.toFixed(2));
+    } else {
+      setUsdAmount('');
+    }
+  };
 
   const handleBuy = async () => {
-    let icpAmount: number;
+    if (!usdAmount || parseFloat(usdAmount) <= 0) return;
     
-    if (buyInputMode === 'dollar') {
-      const dollarAmount = parseFloat(buyAmount);
-      if (isNaN(dollarAmount) || dollarAmount <= 0 || currentPrice <= 0) return;
-      icpAmount = dollarAmount / currentPrice;
-    } else {
-      icpAmount = parseFloat(buyAmount);
-      if (isNaN(icpAmount) || icpAmount <= 0) return;
-    }
-    
-    const success = await buyICP(icpAmount);
-    if (success) {
-      setBuyAmount('');
+    try {
+      await buyMutation.mutateAsync(parseFloat(usdAmount));
+      toast.success('ICP purchased successfully', {
+        icon: <CheckCircle2 className="h-4 w-4" />,
+      });
+      setUsdAmount('');
+      setIcpAmount('');
+    } catch (error: any) {
+      console.error('Buy failed:', error);
+      const errorMessage = error.message || 'Failed to buy ICP';
+      
+      if (errorMessage.includes('Account setup required')) {
+        toast.error(errorMessage, {
+          icon: <AlertCircle className="h-4 w-4" />,
+          description: 'Your account is being initialized. This may take a few seconds.',
+          duration: 5000,
+        });
+      } else {
+        toast.error(errorMessage, {
+          icon: <XCircle className="h-4 w-4" />,
+        });
+      }
     }
   };
 
   const handleSell = async () => {
-    let icpAmount: number;
+    if (!icpAmount || parseFloat(icpAmount) <= 0) return;
     
-    if (sellInputMode === 'dollar') {
-      const dollarAmount = parseFloat(sellAmount);
-      if (isNaN(dollarAmount) || dollarAmount <= 0 || currentPrice <= 0) return;
-      icpAmount = dollarAmount / currentPrice;
-    } else {
-      icpAmount = parseFloat(sellAmount);
-      if (isNaN(icpAmount) || icpAmount <= 0) return;
-    }
-    
-    const success = await sellICP(icpAmount);
-    if (success) {
-      setSellAmount('');
-    }
-  };
-
-  const handleOpenPosition = async () => {
-    const icpAmount = parseFloat(leverageAmount);
-    if (isNaN(icpAmount) || icpAmount <= 0 || currentPrice <= 0) return;
-
     try {
-      if (positionType === 'long') {
-        await openLong(icpAmount, currentPrice, selectedLeverage);
+      await sellMutation.mutateAsync(parseFloat(icpAmount));
+      toast.success('ICP sold successfully', {
+        icon: <CheckCircle2 className="h-4 w-4" />,
+      });
+      setUsdAmount('');
+      setIcpAmount('');
+    } catch (error: any) {
+      console.error('Sell failed:', error);
+      const errorMessage = error.message || 'Failed to sell ICP';
+      
+      if (errorMessage.includes('Account setup required')) {
+        toast.error(errorMessage, {
+          icon: <AlertCircle className="h-4 w-4" />,
+          description: 'Your account is being initialized. This may take a few seconds.',
+          duration: 5000,
+        });
       } else {
-        await openShort(icpAmount, currentPrice, selectedLeverage);
+        toast.error(errorMessage, {
+          icon: <XCircle className="h-4 w-4" />,
+        });
       }
-      setLeverageAmount('');
-    } catch (error) {
-      // Error is handled by the mutation
     }
   };
 
-  const toggleBuyInputMode = () => {
-    setBuyInputMode(prev => prev === 'icp' ? 'dollar' : 'icp');
-    setBuyAmount('');
-  };
+  const isBuying = buyMutation.isPending;
+  const isSelling = sellMutation.isPending;
 
-  const toggleSellInputMode = () => {
-    setSellInputMode(prev => prev === 'icp' ? 'dollar' : 'icp');
-    setSellAmount('');
-  };
-
-  const handleBuyMax = () => {
-    if (!portfolio || portfolio.cashBalance <= 0 || currentPrice <= 0) return;
-    
-    if (buyInputMode === 'dollar') {
-      setBuyAmount(portfolio.cashBalance.toFixed(2));
-    } else {
-      const maxICP = portfolio.cashBalance / currentPrice;
-      setBuyAmount(maxICP.toFixed(4));
-    }
-  };
-
-  const handleSellMax = () => {
-    if (!portfolio || portfolio.icpBalance <= 0 || currentPrice <= 0) return;
-    
-    if (sellInputMode === 'dollar') {
-      const dollarValue = portfolio.icpBalance * currentPrice;
-      setSellAmount(dollarValue.toFixed(2));
-    } else {
-      setSellAmount(portfolio.icpBalance.toFixed(4));
-    }
-  };
-
-  // Calculate display values for buy tab
-  let buyICPAmount = 0;
-  let buyCost = 0;
-  
-  if (buyInputMode === 'dollar') {
-    const dollarAmount = parseFloat(buyAmount) || 0;
-    buyICPAmount = currentPrice > 0 ? dollarAmount / currentPrice : 0;
-    buyCost = dollarAmount;
-  } else {
-    buyICPAmount = parseFloat(buyAmount) || 0;
-    buyCost = buyICPAmount * currentPrice;
+  // Show error state if portfolio fails to load
+  if (portfolioError) {
+    return (
+      <Card className="w-full">
+        <CardHeader>
+          <CardTitle>Trade ICP</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="flex flex-col items-center justify-center py-8 space-y-4">
+            <AlertCircle className="h-12 w-12 text-muted-foreground" />
+            <div className="text-center space-y-2">
+              <p className="text-sm font-medium">Account Initialization</p>
+              <p className="text-xs text-muted-foreground">
+                Setting up your trading account. Please wait a moment...
+              </p>
+            </div>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => window.location.reload()}
+            >
+              Refresh Page
+            </Button>
+          </div>
+        </CardContent>
+      </Card>
+    );
   }
-
-  // Calculate display values for sell tab
-  let sellICPAmount = 0;
-  let sellProceeds = 0;
-  
-  if (sellInputMode === 'dollar') {
-    const dollarAmount = parseFloat(sellAmount) || 0;
-    sellICPAmount = currentPrice > 0 ? dollarAmount / currentPrice : 0;
-    sellProceeds = dollarAmount;
-  } else {
-    sellICPAmount = parseFloat(sellAmount) || 0;
-    sellProceeds = sellICPAmount * currentPrice;
-  }
-
-  // Calculate leverage values
-  const leverageICPAmount = parseFloat(leverageAmount) || 0;
-  const positionSize = leverageICPAmount * currentPrice * selectedLeverage;
-  const marginRequired = positionSize / selectedLeverage;
-
-  // Validation
-  const canBuy = buyAmount && buyICPAmount > 0 && !isBuying && !isLoadingPrice && 
-                 (!portfolio || buyCost <= portfolio.cashBalance);
-  const canSell = sellAmount && sellICPAmount > 0 && !isSelling && !isLoadingPrice &&
-                  (!portfolio || sellICPAmount <= portfolio.icpBalance);
-  const canOpenPosition = leverageAmount && leverageICPAmount > 0 && !isOpeningLong && !isOpeningShort && !isLoadingPrice &&
-                          (!portfolio || marginRequired <= portfolio.cashBalance);
-
-  const canBuyMax = portfolio && portfolio.cashBalance > 0 && currentPrice > 0 && !isBuying;
-  const canSellMax = portfolio && portfolio.icpBalance > 0 && currentPrice > 0 && !isSelling;
 
   return (
-    <Card>
+    <Card className="w-full">
       <CardHeader>
-        <CardTitle>Trade ICP</CardTitle>
-        {!isLoadingPrice && (
-          <p className="text-sm text-muted-foreground">
-            Current Price: <span className="font-semibold text-foreground">${currentPrice.toFixed(2)}</span>
-          </p>
-        )}
+        <CardTitle className="flex items-center justify-between">
+          <span>Trade ICP</span>
+          <span className="text-sm font-normal text-muted-foreground">
+            ${currentPrice.toFixed(2)}
+          </span>
+        </CardTitle>
       </CardHeader>
       <CardContent>
-        <Tabs defaultValue="buy">
-          <TabsList className="grid w-full grid-cols-3">
+        <Tabs defaultValue="buy" className="w-full">
+          <TabsList className="grid w-full grid-cols-2">
             <TabsTrigger value="buy">Buy</TabsTrigger>
             <TabsTrigger value="sell">Sell</TabsTrigger>
-            <TabsTrigger value="leverage">Leverage</TabsTrigger>
           </TabsList>
 
           <TabsContent value="buy" className="space-y-4">
-            {portfolio && (
-              <div className="rounded-lg bg-muted/50 p-3 text-sm">
-                <p className="text-muted-foreground">
-                  Available Cash: <span className="font-semibold text-foreground">${portfolio.cashBalance.toFixed(2)}</span>
-                </p>
-              </div>
-            )}
             <div className="space-y-2">
               <div className="flex items-center justify-between">
-                <Label htmlFor="buy-amount">
-                  {buyInputMode === 'icp' ? 'Amount (ICP)' : 'Amount (USD)'}
-                </Label>
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={toggleBuyInputMode}
-                  className="h-6 px-2 text-xs"
-                >
-                  <ArrowLeftRight className="h-3 w-3 mr-1" />
-                  {buyInputMode === 'icp' ? 'Switch to $' : 'Switch to ICP'}
-                </Button>
+                <label className="text-sm font-medium">Amount</label>
+                <div className="flex gap-2">
+                  <Button
+                    size="sm"
+                    variant={inputMode === 'usd' ? 'default' : 'outline'}
+                    onClick={() => setInputMode('usd')}
+                  >
+                    USD
+                  </Button>
+                  <Button
+                    size="sm"
+                    variant={inputMode === 'icp' ? 'default' : 'outline'}
+                    onClick={() => setInputMode('icp')}
+                  >
+                    ICP
+                  </Button>
+                </div>
               </div>
-              <div className="flex gap-2">
-                <Input
-                  id="buy-amount"
-                  type="number"
-                  placeholder="0.00"
-                  value={buyAmount}
-                  onChange={(e) => setBuyAmount(e.target.value)}
-                  min="0"
-                  step="0.01"
-                  className="flex-1"
-                />
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={handleBuyMax}
-                  disabled={!canBuyMax}
-                  className="px-4"
-                >
-                  MAX
-                </Button>
-              </div>
-              {buyAmount && parseFloat(buyAmount) > 0 && (
-                <div className="space-y-1 text-sm text-muted-foreground">
-                  {buyInputMode === 'dollar' ? (
-                    <>
-                      <p>
-                        ICP Amount: <span className="font-semibold text-foreground">{buyICPAmount.toFixed(4)} ICP</span>
-                      </p>
-                      <p>
-                        Cost: <span className="font-semibold text-foreground">${buyCost.toFixed(2)}</span>
-                      </p>
-                    </>
-                  ) : (
-                    <p>
-                      Cost: <span className="font-semibold text-foreground">${buyCost.toFixed(2)}</span>
+
+              {inputMode === 'usd' ? (
+                <div className="space-y-2">
+                  <Input
+                    type="number"
+                    placeholder="0.00"
+                    value={usdAmount}
+                    onChange={(e) => handleUsdChange(e.target.value)}
+                    disabled={isBuying}
+                  />
+                  {icpAmount && (
+                    <p className="text-sm text-muted-foreground">
+                      ≈ {icpAmount} ICP
                     </p>
                   )}
-                  {portfolio && buyCost > portfolio.cashBalance && (
-                    <p className="text-red-500 text-xs">
-                      Insufficient funds (Available: ${portfolio.cashBalance.toFixed(2)})
+                </div>
+              ) : (
+                <div className="space-y-2">
+                  <Input
+                    type="number"
+                    placeholder="0.000000"
+                    value={icpAmount}
+                    onChange={(e) => handleIcpChange(e.target.value)}
+                    disabled={isBuying}
+                  />
+                  {usdAmount && (
+                    <p className="text-sm text-muted-foreground">
+                      ≈ ${usdAmount}
                     </p>
                   )}
                 </div>
               )}
             </div>
+
+            <div className="space-y-2">
+              <div className="flex justify-between text-sm">
+                <span className="text-muted-foreground">Available Cash:</span>
+                <span className="font-medium">
+                  {portfolioLoading ? (
+                    <Loader2 className="h-3 w-3 animate-spin inline" />
+                  ) : (
+                    `$${portfolio?.cashBalance.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`
+                  )}
+                </span>
+              </div>
+            </div>
+
             <Button
-              onClick={handleBuy}
-              disabled={!canBuy}
               className="w-full"
+              onClick={handleBuy}
+              disabled={!usdAmount || parseFloat(usdAmount) <= 0 || isBuying || portfolioLoading}
             >
-              {isBuying && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-              Buy ICP
+              {isBuying ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  Buying...
+                </>
+              ) : (
+                'Buy ICP'
+              )}
             </Button>
           </TabsContent>
 
           <TabsContent value="sell" className="space-y-4">
-            {portfolio && (
-              <div className="rounded-lg bg-muted/50 p-3 text-sm">
-                <p className="text-muted-foreground">
-                  Available ICP to Sell: <span className="font-semibold text-foreground">{portfolio.icpBalance.toFixed(4)} ICP</span>
-                </p>
-              </div>
-            )}
             <div className="space-y-2">
               <div className="flex items-center justify-between">
-                <Label htmlFor="sell-amount">
-                  {sellInputMode === 'icp' ? 'Amount (ICP)' : 'Amount (USD)'}
-                </Label>
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={toggleSellInputMode}
-                  className="h-6 px-2 text-xs"
-                >
-                  <ArrowLeftRight className="h-3 w-3 mr-1" />
-                  {sellInputMode === 'icp' ? 'Switch to $' : 'Switch to ICP'}
-                </Button>
+                <label className="text-sm font-medium">Amount</label>
+                <div className="flex gap-2">
+                  <Button
+                    size="sm"
+                    variant={inputMode === 'usd' ? 'default' : 'outline'}
+                    onClick={() => setInputMode('usd')}
+                  >
+                    USD
+                  </Button>
+                  <Button
+                    size="sm"
+                    variant={inputMode === 'icp' ? 'default' : 'outline'}
+                    onClick={() => setInputMode('icp')}
+                  >
+                    ICP
+                  </Button>
+                </div>
               </div>
-              <div className="flex gap-2">
-                <Input
-                  id="sell-amount"
-                  type="number"
-                  placeholder="0.00"
-                  value={sellAmount}
-                  onChange={(e) => setSellAmount(e.target.value)}
-                  min="0"
-                  step="0.01"
-                  className="flex-1"
-                />
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={handleSellMax}
-                  disabled={!canSellMax}
-                  className="px-4"
-                >
-                  MAX
-                </Button>
-              </div>
-              {sellAmount && parseFloat(sellAmount) > 0 && (
-                <div className="space-y-1 text-sm text-muted-foreground">
-                  {sellInputMode === 'dollar' ? (
-                    <>
-                      <p>
-                        ICP Amount: <span className="font-semibold text-foreground">{sellICPAmount.toFixed(4)} ICP</span>
-                      </p>
-                      <p>
-                        Proceeds: <span className="font-semibold text-foreground">${sellProceeds.toFixed(2)}</span>
-                      </p>
-                    </>
-                  ) : (
-                    <p>
-                      Proceeds: <span className="font-semibold text-foreground">${sellProceeds.toFixed(2)}</span>
+
+              {inputMode === 'usd' ? (
+                <div className="space-y-2">
+                  <Input
+                    type="number"
+                    placeholder="0.00"
+                    value={usdAmount}
+                    onChange={(e) => handleUsdChange(e.target.value)}
+                    disabled={isSelling}
+                  />
+                  {icpAmount && (
+                    <p className="text-sm text-muted-foreground">
+                      ≈ {icpAmount} ICP
                     </p>
                   )}
-                  {portfolio && sellICPAmount > portfolio.icpBalance && (
-                    <p className="text-red-500 text-xs">
-                      Insufficient ICP (Available: {portfolio.icpBalance.toFixed(4)} ICP)
+                </div>
+              ) : (
+                <div className="space-y-2">
+                  <Input
+                    type="number"
+                    placeholder="0.000000"
+                    value={icpAmount}
+                    onChange={(e) => handleIcpChange(e.target.value)}
+                    disabled={isSelling}
+                  />
+                  {usdAmount && (
+                    <p className="text-sm text-muted-foreground">
+                      ≈ ${usdAmount}
                     </p>
                   )}
                 </div>
               )}
             </div>
-            <Button
-              onClick={handleSell}
-              disabled={!canSell}
-              className="w-full"
-              variant="secondary"
-            >
-              {isSelling && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-              Sell ICP
-            </Button>
-          </TabsContent>
 
-          <TabsContent value="leverage" className="space-y-4">
-            {portfolio && (
-              <div className="rounded-lg bg-muted/50 p-3 text-sm">
-                <p className="text-muted-foreground">
-                  Available Cash: <span className="font-semibold text-foreground">${portfolio.cashBalance.toFixed(2)}</span>
-                </p>
+            <div className="space-y-2">
+              <div className="flex justify-between text-sm">
+                <span className="text-muted-foreground">Available ICP:</span>
+                <span className="font-medium">
+                  {portfolioLoading ? (
+                    <Loader2 className="h-3 w-3 animate-spin inline" />
+                  ) : (
+                    `${portfolio?.icpHoldings.toLocaleString('en-US', { minimumFractionDigits: 6, maximumFractionDigits: 6 })} ICP`
+                  )}
+                </span>
               </div>
-            )}
-            
-            <div className="space-y-4">
-              <div className="space-y-2">
-                <Label>Position Type</Label>
-                <RadioGroup value={positionType} onValueChange={(value) => setPositionType(value as PositionType)}>
-                  <div className="flex items-center space-x-2">
-                    <RadioGroupItem value="long" id="long" />
-                    <Label htmlFor="long" className="font-normal cursor-pointer">
-                      Long (Profit when price goes up)
-                    </Label>
-                  </div>
-                  <div className="flex items-center space-x-2">
-                    <RadioGroupItem value="short" id="short" />
-                    <Label htmlFor="short" className="font-normal cursor-pointer">
-                      Short (Profit when price goes down)
-                    </Label>
-                  </div>
-                </RadioGroup>
-              </div>
-
-              <div className="space-y-2">
-                <Label>Leverage</Label>
-                <RadioGroup 
-                  value={selectedLeverage.toString()} 
-                  onValueChange={(value) => setSelectedLeverage(parseInt(value))}
-                >
-                  <div className="grid grid-cols-5 gap-2">
-                    {LEVERAGE_OPTIONS.map((option) => (
-                      <div key={option.value} className="flex items-center">
-                        <RadioGroupItem 
-                          value={option.value.toString()} 
-                          id={`leverage-${option.value}`}
-                          className="sr-only peer"
-                        />
-                        <Label 
-                          htmlFor={`leverage-${option.value}`}
-                          className="flex items-center justify-center w-full px-3 py-2 text-sm font-medium border rounded-md cursor-pointer peer-data-[state=checked]:bg-primary peer-data-[state=checked]:text-primary-foreground peer-data-[state=checked]:border-primary hover:bg-accent transition-colors"
-                        >
-                          {option.label}
-                        </Label>
-                      </div>
-                    ))}
-                  </div>
-                </RadioGroup>
-              </div>
-
-              <div className="space-y-2">
-                <Label htmlFor="leverage-amount">ICP Amount</Label>
-                <Input
-                  id="leverage-amount"
-                  type="number"
-                  placeholder="0.00"
-                  value={leverageAmount}
-                  onChange={(e) => setLeverageAmount(e.target.value)}
-                  min="0"
-                  step="0.01"
-                />
-                {leverageAmount && parseFloat(leverageAmount) > 0 && (
-                  <div className="space-y-1 text-sm text-muted-foreground">
-                    <p>
-                      Position Size: <span className="font-semibold text-foreground">${positionSize.toFixed(2)}</span>
-                    </p>
-                    <p>
-                      Margin Required ({(100 / selectedLeverage).toFixed(1)}%): <span className="font-semibold text-foreground">${marginRequired.toFixed(2)}</span>
-                    </p>
-                    <p>
-                      Leverage: <span className="font-semibold text-foreground">{selectedLeverage}x</span>
-                    </p>
-                    {portfolio && marginRequired > portfolio.cashBalance && (
-                      <p className="text-red-500 text-xs">
-                        Insufficient funds for margin (Available: ${portfolio.cashBalance.toFixed(2)})
-                      </p>
-                    )}
-                  </div>
-                )}
-              </div>
-
-              <Button
-                onClick={handleOpenPosition}
-                disabled={!canOpenPosition}
-                className="w-full"
-                variant={positionType === 'long' ? 'default' : 'secondary'}
-              >
-                {(isOpeningLong || isOpeningShort) && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                Open {positionType === 'long' ? 'Long' : 'Short'} Position ({selectedLeverage}x)
-              </Button>
             </div>
+
+            <Button
+              className="w-full"
+              variant="destructive"
+              onClick={handleSell}
+              disabled={!icpAmount || parseFloat(icpAmount) <= 0 || isSelling || portfolioLoading}
+            >
+              {isSelling ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  Selling...
+                </>
+              ) : (
+                'Sell ICP'
+              )}
+            </Button>
           </TabsContent>
         </Tabs>
       </CardContent>

@@ -1,134 +1,68 @@
 {
   "kind": "implementation_plan",
   "version": "1.0",
-  "title": "Add technical analysis indicators and switch to accurate CoinGecko pricing",
+  "title": "Implement user registration process",
   "requirements": [
     {
-      "id": "REQ-58",
-      "summary": "Add RSI indicator overlay to PriceChart component with separate panel below main chart showing values 0-100 with oversold/overbought reference lines",
+      "id": "REQ-1",
+      "summary": "Create a registration form component that collects user display name and validates input before account creation",
       "acceptanceCriteria": [
-        "RSI indicator is displayed in a separate panel below the main price chart",
-        "RSI values range from 0-100 and are calculated from historical ICP price data",
-        "RSI panel includes horizontal reference lines at 30 (oversold) and 70 (overbought) levels",
-        "RSI values update automatically when timeframe changes (24h, 7d, 30d, 90d, 180d)"
+        "Registration form appears for new users after Internet Identity authentication",
+        "Form includes display name input field with validation",
+        "Form has clear submit and cancel actions",
+        "Input validation prevents empty or invalid display names",
+        "Form shows loading state during submission"
       ],
       "file_operations": [
         {
-          "path": "frontend/src/utils/technicalIndicators.ts",
+          "path": "frontend/src/components/RegistrationForm.tsx",
           "operation": "create",
-          "description": "Create utility module with RSI calculation function that takes price array and period (default 14) and returns array of RSI values. RSI formula: RSI = 100 - (100 / (1 + RS)) where RS = average gain / average loss over period."
-        },
-        {
-          "path": "frontend/src/components/RSIChart.tsx",
-          "operation": "create",
-          "description": "Create RSI chart component that renders RSI values in a separate panel using Recharts. Include horizontal reference lines at 30 (oversold, green) and 70 (overbought, red). Display RSI value range 0-100 on Y-axis. Style to match existing PriceChart dark theme with emerald/red accents."
-        },
-        {
-          "path": "frontend/src/components/PriceChart.tsx",
-          "operation": "modify",
-          "description": "Integrate RSIChart component below the main price chart. Pass historical price data and selected timeframe to RSIChart. Calculate RSI values from priceData using the technicalIndicators utility. Maintain responsive layout with proper spacing between main chart and RSI panel."
+          "description": "Create a registration form component with display name input, validation logic (minimum 2 characters, maximum 50 characters, no empty strings), submit/cancel buttons, loading states, and error handling. The form should use shadcn/ui components (Card, Input, Button) for consistent styling with the existing application. Include form state management with controlled inputs and validation feedback."
         }
       ]
     },
     {
-      "id": "REQ-59",
-      "summary": "Add MACD indicator overlay to PriceChart component with MACD line, signal line, and histogram in separate panel below RSI",
+      "id": "REQ-3",
+      "summary": "Update App.tsx to integrate registration flow between Internet Identity login and main application access",
       "acceptanceCriteria": [
-        "MACD indicator is displayed in a separate panel below the RSI panel",
-        "MACD panel shows three components: MACD line, signal line, and histogram bars",
-        "MACD values are calculated from historical ICP price data using standard 12/26/9 parameters",
-        "Histogram bars are colored green for positive values and red for negative values",
-        "MACD values update automatically when timeframe changes"
+        "After successful Internet Identity login, check if user account exists",
+        "If no account exists, display registration form before main app",
+        "After successful registration, proceed to main trading application",
+        "Handle registration errors with clear user feedback",
+        "Existing users bypass registration and go directly to trading interface"
       ],
       "file_operations": [
         {
-          "path": "frontend/src/utils/technicalIndicators.ts",
+          "path": "frontend/src/App.tsx",
           "operation": "modify",
-          "description": "Add MACD calculation functions: calculateEMA for exponential moving average, calculateMACD that returns {macdLine, signalLine, histogram} using standard 12/26/9 parameters. MACD = EMA(12) - EMA(26), Signal = EMA(9) of MACD, Histogram = MACD - Signal."
+          "description": "Add registration flow orchestration after Internet Identity authentication. Check if user has completed registration by calling getCallerUserProfile(). If profile is null, display the RegistrationForm component. After successful registration, refresh the profile query and proceed to the main trading interface. Handle registration states (checking, showing form, registered) and display appropriate loading states. Preserve existing authentication flow, account initialization logic, error alerts, and tabbed navigation. The authorization component requires profile setup, so integrate registration before the main app loads."
         },
         {
-          "path": "frontend/src/components/MACDChart.tsx",
+          "path": "frontend/src/hooks/useRegistration.ts",
           "operation": "create",
-          "description": "Create MACD chart component rendering MACD line (blue), signal line (orange), and histogram bars using Recharts ComposedChart. Color histogram bars green for positive values, red for negative. Include zero reference line. Style to match dark trading theme."
-        },
-        {
-          "path": "frontend/src/components/PriceChart.tsx",
-          "operation": "modify",
-          "description": "Integrate MACDChart component below RSIChart. Pass historical price data to calculate MACD values. Ensure proper vertical stacking of main chart, RSI panel, and MACD panel with consistent styling and spacing."
+          "description": "Create a custom hook that provides registration functionality using React Query mutation. Call the backend registerUser(displayName: string) method and handle success/error states. On successful registration, invalidate the 'currentUserProfile' query to refresh the profile data. Return mutation state (isLoading, isError, error, mutate) for use in the RegistrationForm component."
         }
       ]
     },
     {
-      "id": "REQ-60",
-      "summary": "Add moving average overlays (SMA/EMA) to main price chart with toggleable visibility for 20, 50, 100, 200 periods",
+      "id": "REQ-4",
+      "summary": "Add registration success confirmation with welcome message and account details before entering the trading application",
       "acceptanceCriteria": [
-        "Moving average lines are overlaid directly on the main price chart",
-        "Users can toggle visibility of individual moving averages (20, 50, 100, 200 periods)",
-        "Each moving average is displayed with a distinct color for easy identification",
-        "Moving averages are calculated from historical ICP price data and update with timeframe changes",
-        "Toggle controls are accessible and clearly labeled with period lengths"
+        "Display welcome message with user's display name after registration",
+        "Show starting cash balance ($10,000) confirmation",
+        "Provide clear call-to-action to proceed to trading",
+        "Success state transitions smoothly to main application"
       ],
       "file_operations": [
         {
-          "path": "frontend/src/utils/technicalIndicators.ts",
-          "operation": "modify",
-          "description": "Add calculateSMA function that takes price array and period, returns simple moving average array. Add calculateEMA if not already present from MACD requirement."
-        },
-        {
-          "path": "frontend/src/components/MovingAverageToggles.tsx",
+          "path": "frontend/src/components/RegistrationSuccess.tsx",
           "operation": "create",
-          "description": "Create component with four toggle buttons for MA periods (20, 50, 100, 200). Each toggle displays period label with corresponding color indicator. Use state to track enabled/disabled status for each MA. Style as compact inline controls matching trading theme."
+          "description": "Create a success confirmation component displaying a welcome message with the user's display name, the starting cash balance of $10,000, and a call-to-action button to proceed to the trading application. Use shadcn/ui Card component for consistent styling. Include celebratory design elements (success icon, positive color scheme) to create a welcoming experience."
         },
         {
-          "path": "frontend/src/components/PriceChart.tsx",
+          "path": "frontend/src/App.tsx",
           "operation": "modify",
-          "description": "Add MovingAverageToggles component above the main price chart. Calculate SMA values for enabled periods (20, 50, 100, 200) from priceData. Overlay MA lines on main chart using Recharts Line components with distinct colors: MA20 (yellow), MA50 (cyan), MA100 (magenta), MA200 (orange). Only render lines for enabled MAs."
-        }
-      ]
-    },
-    {
-      "id": "REQ-61",
-      "summary": "Add interactive trendline drawing tool to PriceChart allowing users to click and drag custom trendlines for technical analysis",
-      "acceptanceCriteria": [
-        "Users can click and drag on the price chart to draw custom trendlines",
-        "Trendlines persist on the chart until manually removed by the user",
-        "Users can draw multiple trendlines on the same chart",
-        "Trendlines scale appropriately when timeframe or zoom level changes",
-        "A clear button or tool allows users to remove individual trendlines or clear all at once"
-      ],
-      "file_operations": [
-        {
-          "path": "frontend/src/hooks/useTrendlines.ts",
-          "operation": "create",
-          "description": "Create hook managing trendline state with array of trendlines (each containing start/end coordinates and id). Provide functions: addTrendline, removeTrendline, clearAllTrendlines. Store trendlines in component state (not localStorage since they should reset on page refresh)."
-        },
-        {
-          "path": "frontend/src/components/TrendlineDrawingTool.tsx",
-          "operation": "create",
-          "description": "Create component that overlays on PriceChart for drawing trendlines. Handle mouse events (onMouseDown, onMouseMove, onMouseUp) to capture click-drag gestures. Convert pixel coordinates to chart data coordinates. Render SVG lines for each trendline. Include drawing mode toggle button and clear all button."
-        },
-        {
-          "path": "frontend/src/components/PriceChart.tsx",
-          "operation": "modify",
-          "description": "Integrate TrendlineDrawingTool as overlay on main price chart. Pass chart dimensions and scale functions to convert between pixel and data coordinates. Ensure trendlines scale correctly when timeframe changes by storing them in data coordinate space rather than pixel space. Add control buttons for enabling drawing mode and clearing trendlines."
-        }
-      ]
-    },
-    {
-      "id": "REQ-62",
-      "summary": "Update useICPPriceData hook to integrate CoinGecko API for accurate real-time ICP pricing that matches major exchanges",
-      "acceptanceCriteria": [
-        "CoinGecko API is used to fetch current ICP spot price",
-        "Historical price data is fetched from CoinGecko for all supported timeframes (24h, 7d, 30d, 90d, 180d)",
-        "Price data accurately reflects ICP prices from major exchanges",
-        "API requests include proper error handling and fallback mechanisms",
-        "Price updates occur at appropriate intervals to maintain accuracy"
-      ],
-      "file_operations": [
-        {
-          "path": "frontend/src/hooks/useICPPriceData.ts",
-          "operation": "modify",
-          "description": "Replace Kong Swap API calls with CoinGecko API. Use CoinGecko endpoint: GET https://api.coingecko.com/api/v3/simple/price?ids=internet-computer&vs_currencies=usd for current price. Use GET https://api.coingecko.com/api/v3/coins/internet-computer/market_chart?vs_currency=usd&days={days} for historical data where days maps to timeframe (1 for 24H, 7 for 7D, 30 for 30D, 90 for 90D, 180 for 180D). Parse response.prices array containing [timestamp, price] pairs. Include error handling with fallback to synthetic data if API fails. Set appropriate refetch intervals (30s for current price, 5min for historical)."
+          "description": "Add registration success state management to App.tsx. After successful registration (when useRegistration mutation succeeds), show the RegistrationSuccess component with the display name from the form. Provide a handler to dismiss the success screen and transition to the main trading interface. Maintain state to track: not-registered (show form), registration-success (show success screen), registered (show main app)."
         }
       ]
     }

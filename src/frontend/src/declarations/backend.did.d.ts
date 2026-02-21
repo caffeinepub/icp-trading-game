@@ -12,27 +12,23 @@ import type { Principal } from '@icp-sdk/core/principal';
 
 export interface Account {
   'pnl' : number,
+  'totalPortfolioValue' : number,
   'lastUpdated' : Time,
   'icpBalance' : number,
   'cashBalance' : number,
+  'principalId' : Principal,
 }
-export type GameMode = { 'monthly' : null } |
-  { 'yearly' : null } |
-  { 'daily' : null } |
-  { 'weekly' : null };
-export interface LeveragedPosition {
-  'leverage' : number,
-  'isOpen' : boolean,
-  'positionType' : PositionType,
-  'liquidationPrice' : number,
-  'entryPrice' : number,
-  'margin' : number,
-  'amountICP' : number,
-  'openedAt' : Time,
+export interface LedgerTransaction {
+  'transactionType' : TransactionType,
+  'icpBalanceAfter' : number,
+  'timestamp' : Time,
+  'price' : number,
+  'cashBalanceAfter' : number,
+  'icpAmount' : number,
 }
-export type PositionType = { 'long' : null } |
-  { 'short' : null };
 export type Time = bigint;
+export type TransactionType = { 'buy' : null } |
+  { 'sell' : null };
 export interface TransformationInput {
   'context' : Uint8Array,
   'response' : http_request_result,
@@ -46,12 +42,6 @@ export interface UserProfile { 'name' : string }
 export type UserRole = { 'admin' : null } |
   { 'user' : null } |
   { 'guest' : null };
-export interface Winner {
-  'finalPortfolioValue' : number,
-  'winner' : Principal,
-  'profitLoss' : number,
-  'timestamp' : Time,
-}
 export interface http_header { 'value' : string, 'name' : string }
 export interface http_request_result {
   'status' : bigint,
@@ -61,30 +51,24 @@ export interface http_request_result {
 export interface _SERVICE {
   '_initializeAccessControlWithSecret' : ActorMethod<[string], undefined>,
   'assignCallerUserRole' : ActorMethod<[Principal, UserRole], undefined>,
-  'buyICP' : ActorMethod<[GameMode, number, number], undefined>,
-  'closePosition' : ActorMethod<[GameMode, bigint, number], undefined>,
-  'createAccount' : ActorMethod<[GameMode], undefined>,
-  'getAccount' : ActorMethod<[GameMode, Principal], [] | [Account]>,
+  'buyICP' : ActorMethod<[number], undefined>,
+  'getBalance' : ActorMethod<[], [string, number, number]>,
+  'getBalanceForUser' : ActorMethod<[Principal], [string, number, number]>,
   'getCallerUserProfile' : ActorMethod<[], [] | [UserProfile]>,
   'getCallerUserRole' : ActorMethod<[], UserRole>,
   'getICPPrice' : ActorMethod<[], number>,
-  'getLeaderboard' : ActorMethod<[GameMode], Array<[Principal, Account]>>,
-  'getOpenPositions' : ActorMethod<[GameMode], Array<LeveragedPosition>>,
+  'getOrCreateAccount' : ActorMethod<[], Account>,
+  'getTransactionHistory' : ActorMethod<[], Array<LedgerTransaction>>,
+  'getTransactionHistoryForUser' : ActorMethod<
+    [Principal],
+    Array<LedgerTransaction>
+  >,
   'getUserProfile' : ActorMethod<[Principal], [] | [UserProfile]>,
-  'getWinners' : ActorMethod<[GameMode], Array<Winner>>,
+  'initializeDefaultGameMode' : ActorMethod<[], undefined>,
   'isCallerAdmin' : ActorMethod<[], boolean>,
-  'markWinner' : ActorMethod<[GameMode, Winner], undefined>,
-  'openLongPosition' : ActorMethod<
-    [GameMode, number, number, number],
-    undefined
-  >,
-  'openShortPosition' : ActorMethod<
-    [GameMode, number, number, number],
-    undefined
-  >,
-  'resetAccount' : ActorMethod<[GameMode], undefined>,
+  'registerUser' : ActorMethod<[string], undefined>,
   'saveCallerUserProfile' : ActorMethod<[UserProfile], undefined>,
-  'sellICP' : ActorMethod<[GameMode, number, number], undefined>,
+  'sellICP' : ActorMethod<[number], undefined>,
   'transform' : ActorMethod<[TransformationInput], TransformationOutput>,
 }
 export declare const idlService: IDL.ServiceClass;

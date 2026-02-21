@@ -1,13 +1,12 @@
 # Specification
 
 ## Summary
-**Goal:** Add professional technical analysis tools (RSI, MACD, moving averages, trendline drawing) to the ICP price chart and switch to accurate CoinGecko API pricing.
+**Goal:** Implement a user registration process that collects display names and initializes accounts for new users after Internet Identity authentication.
 
 **Planned changes:**
-- Add RSI indicator panel below the main price chart with oversold/overbought reference lines
-- Add MACD indicator panel with MACD line, signal line, and histogram bars
-- Add toggleable moving average overlays (20, 50, 100, 200 periods) directly on the price chart
-- Add interactive trendline drawing tool allowing users to click and drag custom trendlines
-- Replace current price data source with CoinGecko API for accurate real-time ICP pricing matching major exchanges
+- Create a registration form component with display name input and validation
+- Add backend endpoint to register users with $10,000 starting balance
+- Update App.tsx to check for existing accounts and show registration for new users
+- Display welcome confirmation with account details after successful registration
 
-**User-visible outcome:** Users can analyze ICP price trends using professional trading indicators (RSI, MACD, moving averages) overlaid on an accurate price chart sourced from CoinGecko, and draw custom trendlines for technical analysis.
+**User-visible outcome:** New users will complete a simple registration form after Internet Identity login, entering their display name before accessing the trading application with their $10,000 starting balance. Existing users proceed directly to trading.

@@ -1,42 +1,50 @@
 import { useQuery } from '@tanstack/react-query';
 import { useActor } from './useActor';
+import { useICPPriceData } from './useICPPriceData';
 import { useGameMode } from '@/contexts/GameModeContext';
-import { useCurrentICPPrice } from './useICPPriceData';
-import { LeveragedPosition, PositionType } from '@/backend';
+import { useInternetIdentity } from './useInternetIdentity';
 
-interface PositionWithPnL extends LeveragedPosition {
+export interface Position {
+  positionType: 'long' | 'short';
+  leverage: number;
+  entryPrice: number;
+  amountICP: number;
+  margin: number;
+  openedAt: bigint;
+  isOpen: boolean;
+  liquidationPrice: number;
   unrealizedPnL: number;
+  currentPrice: number;
 }
 
 export function usePositions() {
   const { actor, isFetching: actorFetching } = useActor();
   const { gameMode } = useGameMode();
-  const { data: currentPrice = 0 } = useCurrentICPPrice();
+  const { data: priceData } = useICPPriceData('1h');
+  const currentPrice = priceData?.currentPrice || 0;
+  const { identity } = useInternetIdentity();
 
-  return useQuery<PositionWithPnL[]>({
+  const query = useQuery<Position[]>({
     queryKey: ['positions', gameMode, currentPrice],
     queryFn: async () => {
-      if (!actor) return [];
+      if (!actor || !identity) return [];
       
-      const positions = await actor.getOpenPositions(gameMode);
-      
-      // Calculate unrealized P&L for each position
-      return positions.map(position => {
-        const isLong = position.positionType === PositionType.long_;
-        
-        const priceDifference = isLong 
-          ? currentPrice - position.entryPrice 
-          : position.entryPrice - currentPrice;
-        
-        const unrealizedPnL = priceDifference * position.amountICP * position.leverage;
-        
-        return {
-          ...position,
-          unrealizedPnL,
-        };
-      });
+      try {
+        // Backend doesn't support leverage positions yet
+        // Return empty array for now
+        return [];
+      } catch (error) {
+        console.error('Failed to fetch positions:', error);
+        return [];
+      }
     },
-    enabled: !!actor && !actorFetching && currentPrice > 0,
-    refetchInterval: 10000, // Refetch every 10 seconds for real-time P&L updates
+    enabled: !!actor && !actorFetching && !!identity && currentPrice > 0,
+    refetchInterval: 10000,
   });
+
+  return {
+    positions: query.data || [],
+    isLoading: actorFetching || query.isLoading,
+    error: query.error,
+  };
 }

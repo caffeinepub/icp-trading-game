@@ -1,6 +1,6 @@
 import { Button } from '@/components/ui/button';
 import { useGameMode } from '@/contexts/GameModeContext';
-import { GameMode } from '../backend';
+import { GameMode } from '../types/game';
 import { Clock } from 'lucide-react';
 
 export default function GameModeSelector() {

@@ -81,7 +81,7 @@ export default function Leaderboard() {
               <TableBody>
                 {leaderboard.map((entry, index) => {
                   const profitLoss = entry.profitLoss;
-                  const profitLossPercent = (profitLoss / 10000) * 100;
+                  const profitLossPercent = entry.profitLossPercentage;
                   
                   return (
                     <TableRow key={entry.principal}>
@@ -90,13 +90,16 @@ export default function Leaderboard() {
                           {index === 0 && <Trophy className="h-4 w-4 text-amber-500" />}
                           {index === 1 && <Trophy className="h-4 w-4 text-slate-400" />}
                           {index === 2 && <Trophy className="h-4 w-4 text-amber-700" />}
-                          <span className="font-semibold">{index + 1}</span>
+                          <span className="font-semibold">{entry.rank}</span>
                         </div>
                       </TableCell>
                       <TableCell>
-                        <code className="text-xs bg-muted px-2 py-1 rounded">
-                          {entry.principal.slice(0, 8)}...{entry.principal.slice(-6)}
-                        </code>
+                        <div className="flex flex-col">
+                          {entry.name && <span className="font-medium">{entry.name}</span>}
+                          <code className="text-xs bg-muted px-2 py-1 rounded">
+                            {entry.principal.slice(0, 8)}...{entry.principal.slice(-6)}
+                          </code>
+                        </div>
                       </TableCell>
                       <TableCell className="text-right font-semibold">
                         ${entry.totalValue.toFixed(2)}

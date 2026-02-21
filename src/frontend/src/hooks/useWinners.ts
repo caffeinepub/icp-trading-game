@@ -1,6 +1,6 @@
 import { useQuery } from '@tanstack/react-query';
 import { useActor } from './useActor';
-import { GameMode, Winner } from '../backend';
+import { GameMode, Winner } from '../types/game';
 
 export function useWinners(gameMode: GameMode) {
   const { actor, isFetching } = useActor();
@@ -9,8 +9,10 @@ export function useWinners(gameMode: GameMode) {
     queryKey: ['winners', gameMode],
     queryFn: async () => {
       if (!actor) return [];
-      return actor.getWinners(gameMode);
+      // Backend function not yet implemented
+      return [];
     },
     enabled: !!actor && !isFetching,
+    refetchInterval: 60000,
   });
 }

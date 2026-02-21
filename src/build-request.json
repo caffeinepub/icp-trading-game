@@ -1,126 +1,100 @@
 {
   "kind": "build_request",
-  "title": "Add technical analysis indicators and switch to accurate CoinGecko pricing",
-  "priority": "high",
+  "title": "Implement user registration process",
+  "projectName": "ICP Trading Game",
+  "priority": "normal",
   "requirements": [
     {
-      "id": "REQ-58",
-      "text": "Add RSI (Relative Strength Index) indicator overlay to the PriceChart component, displaying RSI values (0-100) calculated from historical price data with a separate chart panel below the main price chart",
+      "id": "REQ-1",
+      "text": "Create a registration form component that collects user display name and validates input before account creation",
       "target": "frontend",
       "source": {
         "messageIds": [
-          "msg-12"
+          "msg-user-latest"
         ],
         "quotes": [
-          "Yeah trading tools like rsi macd ect. Can you do that?"
+          "Make a user registration process"
         ]
       },
       "acceptanceCriteria": [
-        "RSI indicator is displayed in a separate panel below the main price chart",
-        "RSI values range from 0-100 and are calculated from historical ICP price data",
-        "RSI panel includes horizontal reference lines at 30 (oversold) and 70 (overbought) levels",
-        "RSI values update automatically when timeframe changes (24h, 7d, 30d, 90d, 180d)"
+        "Registration form appears for new users after Internet Identity authentication",
+        "Form includes display name input field with validation",
+        "Form has clear submit and cancel actions",
+        "Input validation prevents empty or invalid display names",
+        "Form shows loading state during submission"
       ]
     },
     {
-      "id": "REQ-59",
-      "text": "Add MACD (Moving Average Convergence Divergence) indicator overlay to the PriceChart component, displaying MACD line, signal line, and histogram in a separate chart panel",
-      "target": "frontend",
+      "id": "REQ-2",
+      "text": "Add backend endpoint to register new users with display name and initialize their account with starting cash balance",
+      "target": "backend",
       "source": {
         "messageIds": [
-          "msg-12"
+          "msg-user-latest"
         ],
         "quotes": [
-          "Yeah trading tools like rsi macd ect. Can you do that?"
+          "Make a user registration process"
         ]
       },
       "acceptanceCriteria": [
-        "MACD indicator is displayed in a separate panel below the RSI panel",
-        "MACD panel shows three components: MACD line, signal line, and histogram bars",
-        "MACD values are calculated from historical ICP price data using standard 12/26/9 parameters",
-        "Histogram bars are colored green for positive values and red for negative values",
-        "MACD values update automatically when timeframe changes"
+        "Backend accepts registration requests with user principal and display name",
+        "New user accounts are created with $10,000 starting cash balance",
+        "Registration prevents duplicate accounts for the same principal",
+        "Returns success confirmation with account details"
       ]
     },
     {
-      "id": "REQ-60",
-      "text": "Add moving average overlays (SMA/EMA) to the main price chart, allowing users to toggle between different period lengths (20, 50, 100, 200) for trend analysis",
+      "id": "REQ-3",
+      "text": "Update App.tsx to integrate registration flow between Internet Identity login and main application access",
       "target": "frontend",
       "source": {
         "messageIds": [
-          "msg-12"
+          "msg-user-latest"
         ],
         "quotes": [
-          "Yeah trading tools like rsi macd ect. Can you do that?"
+          "Make a user registration process"
         ]
       },
       "acceptanceCriteria": [
-        "Moving average lines are overlaid directly on the main price chart",
-        "Users can toggle visibility of individual moving averages (20, 50, 100, 200 periods)",
-        "Each moving average is displayed with a distinct color for easy identification",
-        "Moving averages are calculated from historical ICP price data and update with timeframe changes",
-        "Toggle controls are accessible and clearly labeled with period lengths"
+        "After successful Internet Identity login, check if user account exists",
+        "If no account exists, display registration form before main app",
+        "After successful registration, proceed to main trading application",
+        "Handle registration errors with clear user feedback",
+        "Existing users bypass registration and go directly to trading interface"
       ]
     },
     {
-      "id": "REQ-61",
-      "text": "Add interactive trendline drawing tool to the PriceChart component, allowing users to click and drag to draw custom trendlines on the price chart for technical analysis",
+      "id": "REQ-4",
+      "text": "Add registration success confirmation with welcome message and account details before entering the trading application",
       "target": "frontend",
       "source": {
         "messageIds": [
-          "msg-12"
+          "msg-user-latest"
         ],
         "quotes": [
-          "Making trend lines and what not"
+          "Make a user registration process"
         ]
       },
       "acceptanceCriteria": [
-        "Users can click and drag on the price chart to draw custom trendlines",
-        "Trendlines persist on the chart until manually removed by the user",
-        "Users can draw multiple trendlines on the same chart",
-        "Trendlines scale appropriately when timeframe or zoom level changes",
-        "A clear button or tool allows users to remove individual trendlines or clear all at once"
-      ]
-    },
-    {
-      "id": "REQ-62",
-      "text": "Update useICPPriceData hook (frontend/src/hooks/useICPPriceData.ts) to integrate CoinGecko API for fetching current ICP price and historical price data, ensuring accurate real-time market prices that match major exchanges like Binance and Coinbase",
-      "target": "frontend",
-      "source": {
-        "messageIds": [
-          "msg-12",
-          "msg-14"
-        ],
-        "quotes": [
-          "The price should be the real price of ICP. The last one from Kong swap has a game nonsense price that didn't represent ICP at all"
-        ]
-      },
-      "acceptanceCriteria": [
-        "CoinGecko API is used to fetch current ICP spot price",
-        "Historical price data is fetched from CoinGecko for all supported timeframes (24h, 7d, 30d, 90d, 180d)",
-        "Price data accurately reflects ICP prices from major exchanges",
-        "API requests include proper error handling and fallback mechanisms",
-        "Price updates occur at appropriate intervals to maintain accuracy"
+        "Display welcome message with user's display name after registration",
+        "Show starting cash balance ($10,000) confirmation",
+        "Provide clear call-to-action to proceed to trading",
+        "Success state transitions smoothly to main application"
       ]
     }
   ],
   "constraints": [
-    "Do not modify frontend/src/hooks/useInternetIdentity.ts",
-    "Do not modify frontend/src/hooks/useInternetIdentity.tsx",
-    "Do not modify frontend/src/hooks/useActor.ts",
-    "Do not modify frontend/src/main.tsx",
-    "Do not modify frontend/src/components/ui directory",
-    "Maintain single-actor architecture in backend/main.mo",
-    "Use CoinGecko API as the primary data source for ICP pricing",
-    "All technical indicators must be calculated client-side from fetched price data"
+    "Preserve existing Internet Identity authentication flow",
+    "Do not modify useInternetIdentity.ts or useActor.ts hooks",
+    "Maintain $10,000 starting cash balance for new accounts",
+    "Registration must work with the existing single-actor backend architecture"
   ],
   "nonGoals": [
-    "Implementing real trading with actual cryptocurrency",
-    "Adding support for cryptocurrencies other than ICP",
-    "Creating custom charting library from scratch",
-    "Implementing server-side indicator calculations",
-    "Adding alerts or notifications for indicator signals",
-    "Implementing automated trading based on technical indicators"
+    "Email verification or additional authentication steps",
+    "Profile picture upload",
+    "Social media account linking",
+    "Password-based authentication",
+    "Multi-step registration wizard"
   ],
   "imageRequirements": {
     "required": [],
