@@ -3,7 +3,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { useBuyICP, useSellICP } from '../hooks/useTradingActions';
+import { useBuyICP, useSellICP, parseBackendError } from '../hooks/useTradingActions';
 import { usePortfolio } from '../hooks/usePortfolio';
 import { useICPPriceData } from '../hooks/useICPPriceData';
 import { Loader2, CheckCircle2, XCircle, AlertCircle } from 'lucide-react';
@@ -53,17 +53,24 @@ export default function TradingPanel() {
       setIcpAmount('');
     } catch (error: any) {
       console.error('Buy failed:', error);
-      const errorMessage = error.message || 'Failed to buy ICP';
+      const errorMessage = parseBackendError(error);
       
-      if (errorMessage.includes('Account setup required')) {
-        toast.error(errorMessage, {
+      // Show appropriate error message based on error type
+      if (errorMessage.includes('registration') || errorMessage.includes('registered')) {
+        toast.error('Registration Required', {
           icon: <AlertCircle className="h-4 w-4" />,
-          description: 'Your account is being initialized. This may take a few seconds.',
+          description: errorMessage,
           duration: 5000,
         });
-      } else {
-        toast.error(errorMessage, {
+      } else if (errorMessage.includes('Insufficient')) {
+        toast.error('Insufficient Balance', {
           icon: <XCircle className="h-4 w-4" />,
+          description: errorMessage,
+        });
+      } else {
+        toast.error('Transaction Failed', {
+          icon: <XCircle className="h-4 w-4" />,
+          description: errorMessage,
         });
       }
     }
@@ -81,17 +88,24 @@ export default function TradingPanel() {
       setIcpAmount('');
     } catch (error: any) {
       console.error('Sell failed:', error);
-      const errorMessage = error.message || 'Failed to sell ICP';
+      const errorMessage = parseBackendError(error);
       
-      if (errorMessage.includes('Account setup required')) {
-        toast.error(errorMessage, {
+      // Show appropriate error message based on error type
+      if (errorMessage.includes('registration') || errorMessage.includes('registered')) {
+        toast.error('Registration Required', {
           icon: <AlertCircle className="h-4 w-4" />,
-          description: 'Your account is being initialized. This may take a few seconds.',
+          description: errorMessage,
           duration: 5000,
         });
-      } else {
-        toast.error(errorMessage, {
+      } else if (errorMessage.includes('Insufficient')) {
+        toast.error('Insufficient Balance', {
           icon: <XCircle className="h-4 w-4" />,
+          description: errorMessage,
+        });
+      } else {
+        toast.error('Transaction Failed', {
+          icon: <XCircle className="h-4 w-4" />,
+          description: errorMessage,
         });
       }
     }

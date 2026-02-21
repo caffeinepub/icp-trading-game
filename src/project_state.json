@@ -1,47 +1,33 @@
 {
   "schemaVersion": "1.0.0",
   "projectStateVersion": 3,
-  "summary": "User registration application",
+  "summary": "New project",
   "architectural_notes": [],
-  "known_issues": [],
-  "isFixRequest": false,
+  "known_issues": [
+    "Registration flow not properly recognizing registered users during ICP purchase"
+  ],
+  "isFixRequest": true,
   "existing_features": [
     {
-      "id": "feature-create-a-registration-form-component-that-collects-user-display-name-and-validates-input-before-account-creation",
-      "title": "Create a registration form component that collects user display name and validates input before account creation",
+      "id": "feature-ensure-the-frontend-trading-panel-correctly-handles-the-registration-check-response-and-displays-appropriate-error-messages-only-when-a-user-is-genuinely-not-registered",
+      "title": "Ensure the frontend trading panel correctly handles the registration check response and displays appropriate error messages only when a user is genuinely not registered",
       "reqIds": [
-        "REQ-1"
-      ],
-      "version": 1
-    },
-    {
-      "id": "feature-update-app-tsx-to-integrate-registration-flow-between-internet-identity-login-and-main-application-access",
-      "title": "Update App.tsx to integrate registration flow between Internet Identity login and main application access",
-      "reqIds": [
-        "REQ-3"
-      ],
-      "version": 1
-    },
-    {
-      "id": "feature-add-registration-success-confirmation-with-welcome-message-and-account-details-before-entering-the-trading-application",
-      "title": "Add registration success confirmation with welcome message and account details before entering the trading application",
-      "reqIds": [
-        "REQ-4"
+        "REQ-2"
       ],
       "version": 1
     }
   ],
   "new_feature_requests": [
     {
-      "id": "AR-2",
-      "summary": "Add backend endpoint to register new users with display name and initialize their account with starting cash balance",
+      "id": "AR-1",
+      "summary": "Fix the registration verification logic in the buy ICP flow to correctly recognize registered users and allow them to proceed with purchasing ICP without showing 'user not registered' errors",
       "reqIds": [
-        "REQ-2"
+        "REQ-1"
       ],
       "status": "pending"
     }
   ],
-  "projectName": "ICP Trading Game",
+  "projectName": "Fix user registration check during ICP purchase",
   "clarification_mode": "instant",
   "clarification_rounds": 0
 }

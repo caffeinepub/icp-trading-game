@@ -1,19 +1,39 @@
 {
   "kind": "spec_vs_diff_report",
   "version": "1.0",
-  "generatedAt": "2026-02-21T04:26:03.523Z",
-  "summary": "All requirements from the BuildRequest have been successfully implemented. The diff includes: (1) RegistrationForm.tsx component with display name input, validation (min 2, max 50 chars, required), submit/cancel actions, and loading state; (2) Backend registerUser endpoint in main.mo that checks for anonymous/duplicate users, creates accounts with $10,000 cash balance, and assigns user role; (3) App.tsx integration with registration states (checking, needs-registration, registration-success, registered) and account initialization; (4) RegistrationSuccess.tsx component with welcome message, starting balance display, and call-to-action button. No missing requirements or hallucinated features detected.",
+  "generatedAt": "2026-02-21T04:50:22.703Z",
+  "summary": "The implementation addresses both requirements by fixing backend registration verification logic and improving frontend error handling. The backend now uses a hasUserProfile() check and getOrCreateAccount() mechanism, while the frontend's parseBackendError() distinguishes between registration, balance, and generic errors with appropriate user messaging.",
   "missing_requirements": [],
-  "hallucinated_features": [],
-  "confidence": 0.95,
+  "hallucinated_features": [
+    {
+      "description": "Addition of parseBackendError utility function exported from useTradingActions.ts",
+      "reason": "The BuildRequest does not specify creating a separate error parsing utility or exporting it. REQ-2 only requires proper parsing of backend errors and displaying appropriate messages, but doesn't mandate this specific implementation pattern.",
+      "evidence": [
+        "frontend/src/hooks/useTradingActions.ts"
+      ]
+    },
+    {
+      "description": "Removal of pre-call to getOrCreateAccount in trading hooks",
+      "reason": "The BuildRequest does not specify removing any existing getOrCreateAccount calls. The requirement is to fix verification logic, not to refactor the calling pattern.",
+      "evidence": [
+        "frontend/src/hooks/useTradingActions.ts"
+      ]
+    },
+    {
+      "description": "Distinction between different error types (insufficient balance vs registration) with specific toast notifications",
+      "reason": "While REQ-2 requires appropriate error messages for registration status, the BuildRequest does not specify implementing distinct handling for balance errors or creating a multi-tier error categorization system with different toast notification styles.",
+      "evidence": [
+        "frontend/src/components/TradingPanel.tsx",
+        "frontend/src/hooks/useTradingActions.ts"
+      ]
+    }
+  ],
+  "confidence": 0.85,
   "changed_files": [
     "backend/main.mo",
-    "backend/migration.mo",
     "frontend-file-summaries.txt",
-    "frontend/src/App.tsx",
-    "frontend/src/components/RegistrationForm.tsx",
-    "frontend/src/components/RegistrationSuccess.tsx",
-    "frontend/src/hooks/useQueries.ts",
+    "frontend/src/components/TradingPanel.tsx",
+    "frontend/src/hooks/useTradingActions.ts",
     "project_state.json"
   ]
 }

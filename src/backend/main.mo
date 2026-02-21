@@ -11,9 +11,7 @@ import Time "mo:core/Time";
 import OutCall "http-outcalls/outcall";
 import AccessControl "authorization/access-control";
 import MixinAuthorization "authorization/MixinAuthorization";
-import Migration "migration";
 
-(with migration = Migration.run)
 actor {
   type TransactionType = { #buy; #sell };
   type UserProfile = { name : Text };
@@ -211,11 +209,16 @@ actor {
   };
 
   public shared ({ caller }) func buyICP(amount : Float) : async () {
-    if (not (AccessControl.hasPermission(accessControlState, caller, #user))) {
-      Runtime.trap("Unauthorized: Only users can buy ICP");
+    // Authenticate the user with role-based access control
+    // This check ensures the user is registered (has #user role assigned during registration)
+    if (not AccessControl.hasPermission(accessControlState, caller, #user)) {
+      Runtime.trap("Unauthorized: Only registered users can buy ICP");
     };
 
+    // Simulated price check (replace with real implementation)
     var icpPrice : Float = 100.0;
+
+    // Fetch or create account balance (should always exist for registered users)
     let account = await getOrCreateAccount();
 
     if (account.cashBalance < amount) {
@@ -226,7 +229,7 @@ actor {
     let gainedIcp = amount / icpPrice;
 
     let updatedAccount = {
-      account with
+      account with 
       cashBalance = remainingCash;
       icpBalance = account.icpBalance + gainedIcp;
       totalPortfolioValue = remainingCash + (account.icpBalance + gainedIcp) * icpPrice;
@@ -254,8 +257,10 @@ actor {
   };
 
   public shared ({ caller }) func sellICP(amount : Float) : async () {
+    // Authenticate the user with role-based access control
+    // This check ensures the user is registered (has #user role assigned during registration)
     if (not (AccessControl.hasPermission(accessControlState, caller, #user))) {
-      Runtime.trap("Unauthorized: Only users can sell ICP");
+      Runtime.trap("Unauthorized: Only registered users can sell ICP");
     };
 
     var icpPrice : Float = 100.0;

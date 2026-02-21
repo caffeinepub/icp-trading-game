@@ -1,100 +1,54 @@
 {
   "kind": "build_request",
-  "title": "Implement user registration process",
-  "projectName": "ICP Trading Game",
-  "priority": "normal",
+  "title": "Fix user registration check during ICP purchase",
+  "priority": "high",
   "requirements": [
     {
       "id": "REQ-1",
-      "text": "Create a registration form component that collects user display name and validates input before account creation",
-      "target": "frontend",
+      "text": "Fix the registration verification logic in the buy ICP flow to correctly recognize registered users and allow them to proceed with purchasing ICP without showing 'user not registered' errors",
+      "target": "backend",
       "source": {
         "messageIds": [
-          "msg-user-latest"
+          "msg-4"
         ],
         "quotes": [
-          "Make a user registration process"
+          "Still says user not registered when I go to buy ICP. Please fix"
         ]
       },
       "acceptanceCriteria": [
-        "Registration form appears for new users after Internet Identity authentication",
-        "Form includes display name input field with validation",
-        "Form has clear submit and cancel actions",
-        "Input validation prevents empty or invalid display names",
-        "Form shows loading state during submission"
+        "A registered user can successfully initiate an ICP purchase without encountering 'user not registered' errors",
+        "The backend buyICP function correctly validates user registration status before processing the transaction",
+        "Registration state persists correctly across the user session"
       ]
     },
     {
       "id": "REQ-2",
-      "text": "Add backend endpoint to register new users with display name and initialize their account with starting cash balance",
-      "target": "backend",
-      "source": {
-        "messageIds": [
-          "msg-user-latest"
-        ],
-        "quotes": [
-          "Make a user registration process"
-        ]
-      },
-      "acceptanceCriteria": [
-        "Backend accepts registration requests with user principal and display name",
-        "New user accounts are created with $10,000 starting cash balance",
-        "Registration prevents duplicate accounts for the same principal",
-        "Returns success confirmation with account details"
-      ]
-    },
-    {
-      "id": "REQ-3",
-      "text": "Update App.tsx to integrate registration flow between Internet Identity login and main application access",
+      "text": "Ensure the frontend trading panel correctly handles the registration check response and displays appropriate error messages only when a user is genuinely not registered",
       "target": "frontend",
       "source": {
         "messageIds": [
-          "msg-user-latest"
+          "msg-4"
         ],
         "quotes": [
-          "Make a user registration process"
+          "Still says user not registered when I go to buy ICP"
         ]
       },
       "acceptanceCriteria": [
-        "After successful Internet Identity login, check if user account exists",
-        "If no account exists, display registration form before main app",
-        "After successful registration, proceed to main trading application",
-        "Handle registration errors with clear user feedback",
-        "Existing users bypass registration and go directly to trading interface"
-      ]
-    },
-    {
-      "id": "REQ-4",
-      "text": "Add registration success confirmation with welcome message and account details before entering the trading application",
-      "target": "frontend",
-      "source": {
-        "messageIds": [
-          "msg-user-latest"
-        ],
-        "quotes": [
-          "Make a user registration process"
-        ]
-      },
-      "acceptanceCriteria": [
-        "Display welcome message with user's display name after registration",
-        "Show starting cash balance ($10,000) confirmation",
-        "Provide clear call-to-action to proceed to trading",
-        "Success state transitions smoothly to main application"
+        "The trading panel's buy ICP action properly parses backend registration errors",
+        "Users who have completed registration see no 'user not registered' errors when attempting to buy ICP",
+        "Clear error messages are shown only for genuinely unregistered users"
       ]
     }
   ],
   "constraints": [
-    "Preserve existing Internet Identity authentication flow",
-    "Do not modify useInternetIdentity.ts or useActor.ts hooks",
-    "Maintain $10,000 starting cash balance for new accounts",
-    "Registration must work with the existing single-actor backend architecture"
+    "Do not modify the registration form or registration success components",
+    "Preserve the existing Internet Identity authentication flow",
+    "Maintain the current account data structure in the backend"
   ],
   "nonGoals": [
-    "Email verification or additional authentication steps",
-    "Profile picture upload",
-    "Social media account linking",
-    "Password-based authentication",
-    "Multi-step registration wizard"
+    "Changing the registration UI or workflow",
+    "Modifying the portfolio display logic",
+    "Adding new trading features beyond fixing the registration check"
   ],
   "imageRequirements": {
     "required": [],

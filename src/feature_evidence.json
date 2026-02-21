@@ -2,10 +2,11 @@
   "kind": "feature_evidence_report",
   "features": [
     {
-      "featureId": "feature-create-a-registration-form-component-that-collects-user-display-name-and-validates-input-before-account-creation",
-      "featureTitle": "Create a registration form component that collects user display name and validates input before account creation",
+      "featureId": "feature-ensure-the-frontend-trading-panel-correctly-handles-the-registration-check-response-and-displays-appropriate-error-messages-only-when-a-user-is-genuinely-not-registered",
+      "featureTitle": "Ensure the frontend trading panel correctly handles the registration check response and displays appropriate error messages only when a user is genuinely not registered",
       "files": [
-        "frontend/src/components/RegistrationForm.tsx"
+        "frontend/src/components/TradingPanel.tsx",
+        "frontend/src/hooks/useTradingActions.ts"
       ],
       "components": [
         "http-outcalls@3.0.0",
@@ -17,48 +18,7 @@
         "authorization@4.0.0"
       ],
       "testIds": [
-        "REQ-1"
-      ],
-      "confidence": "high"
-    },
-    {
-      "featureId": "feature-update-app-tsx-to-integrate-registration-flow-between-internet-identity-login-and-main-application-access",
-      "featureTitle": "Update App.tsx to integrate registration flow between Internet Identity login and main application access",
-      "files": [
-        "frontend/src/App.tsx"
-      ],
-      "components": [
-        "http-outcalls@3.0.0",
-        "core-infrastructure@1.0.2",
-        "shadcn-ui@1.0.0",
-        "build-template-react@1.0.0",
-        "initial-app@1.0.0",
-        "github-export-icp-cli@1.0.0",
-        "authorization@4.0.0"
-      ],
-      "testIds": [
-        "REQ-3"
-      ],
-      "confidence": "high"
-    },
-    {
-      "featureId": "feature-add-registration-success-confirmation-with-welcome-message-and-account-details-before-entering-the-trading-application",
-      "featureTitle": "Add registration success confirmation with welcome message and account details before entering the trading application",
-      "files": [
-        "frontend/src/App.tsx",
-        "frontend/src/components/RegistrationSuccess.tsx"
-      ],
-      "components": [
-        "http-outcalls@3.0.0",
-        "core-infrastructure@1.0.2",
-        "shadcn-ui@1.0.0",
-        "build-template-react@1.0.0",
-        "initial-app@1.0.0",
-        "github-export-icp-cli@1.0.0",
-        "authorization@4.0.0"
-      ],
-      "testIds": [
-        "REQ-4"
+        "REQ-2"
       ],
       "confidence": "high"
     }
